@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Elite Store | Premium Subscriptions</title>
+    <title>AI LUXURY STORE</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -15,182 +13,107 @@
     <div id="notification" class="notification"></div>
 
     <div id="app">
-        <!-- PREMIUM AUTH SCREEN -->
+        <!-- LUXURY AUTH -->
         <div id="screen-auth" style="display: none;">
             <div class="auth-container">
-                <div class="auth-logo">🤖</div>
-                
-                <!-- LOGIN FORM -->
+                <div class="auth-logo">💎</div>
                 <div id="auth-login-view">
-                    <h1 class="auth-title">Welcome Back</h1>
-                    <p class="auth-subtitle">Login to your elite account to access the world's most powerful AI tools.</p>
-                    
-                    <div class="auth-input-group">
-                        <i data-lucide="mail"></i>
-                        <input type="text" id="login-identifier" class="auth-input" placeholder="Email or Username">
-                    </div>
-                    
-                    <div class="auth-input-group">
-                        <i data-lucide="lock"></i>
-                        <input type="password" id="login-password" class="auth-input" placeholder="Password">
-                    </div>
-                    
-                    <button class="auth-btn" onclick="handleLogin()">
-                        <span>Sign In</span>
-                        <i data-lucide="arrow-right" style="width: 18px;"></i>
-                    </button>
-                    
-                    <p class="auth-footer">
-                        Don't have an account? <span class="auth-link" onclick="toggleAuth('reg')">Create Account</span>
-                    </p>
+                    <h1 class="auth-title">Elite Access</h1>
+                    <p class="auth-subtitle">Login to manage your premium subscriptions.</p>
+                    <input type="text" id="login-identifier" class="auth-input" placeholder="Email or Username">
+                    <input type="password" id="login-password" class="auth-input" placeholder="Password">
+                    <button class="auth-btn" onclick="handleLogin()">ENTER STORE</button>
+                    <p class="auth-footer">New member? <span class="auth-link" onclick="toggleAuth('reg')">Register</span></p>
                 </div>
-
-                <!-- REGISTER FORM -->
                 <div id="auth-reg-view" style="display: none;">
-                    <h1 class="auth-title">Create Elite Account</h1>
-                    <p class="auth-subtitle">Join the thousands of professionals using our premium AI subscriptions.</p>
-                    
-                    <div class="auth-input-group">
-                        <i data-lucide="user"></i>
-                        <input type="text" id="reg-username" class="auth-input" placeholder="Username">
-                    </div>
-
-                    <div class="auth-input-group">
-                        <i data-lucide="mail"></i>
-                        <input type="email" id="reg-email" class="auth-input" placeholder="Email Address">
-                    </div>
-                    
-                    <div class="auth-input-group">
-                        <i data-lucide="lock"></i>
-                        <input type="password" id="reg-password" class="auth-input" placeholder="Password">
-                    </div>
-                    
-                    <button class="auth-btn" onclick="handleRegister()">
-                        <span>Create Account</span>
-                        <i data-lucide="sparkles" style="width: 18px;"></i>
-                    </button>
-                    
-                    <p class="auth-footer">
-                        Already have an account? <span class="auth-link" onclick="toggleAuth('login')">Login</span>
-                    </p>
+                    <h1 class="auth-title">Create Membership</h1>
+                    <p class="auth-subtitle">Join the elite network of AI professionals.</p>
+                    <input type="text" id="reg-username" class="auth-input" placeholder="Username">
+                    <input type="email" id="reg-email" class="auth-input" placeholder="Email Address">
+                    <input type="password" id="reg-password" class="auth-input" placeholder="Password">
+                    <button class="auth-btn" onclick="handleRegister()">CREATE ACCOUNT</button>
+                    <p class="auth-footer">Already member? <span class="auth-link" onclick="toggleAuth('login')">Login</span></p>
                 </div>
             </div>
         </div>
 
-        <!-- MAIN APP CONTENT -->
+        <!-- MAIN APP -->
         <div id="main-content" style="display: none;">
             <div class="container">
-                <!-- TOP HEADER -->
                 <header class="header-info">
                     <div class="user-tag">
-                        <img id="user-photo" src="https://ui-avatars.com/api/?name=User&background=8b5cf6&color=fff" alt="User">
-                        <span id="user-name">User</span>
-                        <div onclick="handleLogout()" style="cursor: pointer; opacity: 0.5; margin-left: 5px;"><i data-lucide="log-out" style="width: 16px;"></i></div>
+                        <img id="user-photo" src="https://ui-avatars.com/api/?name=U&background=fbbf24&color=000" alt="U">
+                        <span id="user-name">MEMBER</span>
+                        <i data-lucide="log-out" onclick="handleLogout()" style="width: 14px; cursor: pointer; color: #555;"></i>
                     </div>
-                    <div class="balance-tag">
-                        <i data-lucide="wallet" style="width: 16px;"></i>
-                        <span id="user-balance">$0.00</span>
-                    </div>
+                    <div class="balance-tag"><span id="user-balance">$0.00</span></div>
                 </header>
 
-                <!-- HOME VIEW -->
                 <div id="screen-home" class="view active">
                     <div class="hero">
-                        <h1>AI Elite Store</h1>
-                        <p>Unlock premium access to the world's most capable AI models. Instant delivery, 100% private access.</p>
+                        <h1>PREMIUM AI CATALOG</h1>
+                        <p>Curated selection of the world's most powerful artificial intelligence tools.</p>
                     </div>
-                    
-                    <div id="tools-list" class="tool-grid">
-                        <!-- Dynamic Plans -->
-                    </div>
+                    <div id="tools-list" class="tool-grid"></div>
                 </div>
 
-                <!-- WALLET VIEW -->
                 <div id="screen-wallet" class="view">
-                    <h2 style="font-family: 'Outfit', sans-serif; font-size: 32px; margin-bottom: 30px;">Financial Wallet</h2>
-                    <div class="tool-card" style="text-align: center; padding: 60px 40px;">
-                        <p style="color: var(--text-dim); margin-bottom: 10px;">Available Balance</p>
-                        <h2 id="wallet-balance-display" style="font-size: 64px; font-weight: 900; margin-bottom: 40px; font-family: 'Outfit', sans-serif;">$0.00</h2>
-                        <button class="auth-btn" onclick="showView('deposit')">Add Funds to Wallet</button>
+                    <h2 style="font-weight: 900; margin-bottom: 25px; letter-spacing: -1px;">ACCOUNT BALANCE</h2>
+                    <div class="tool-card" style="text-align: center; padding: 50px 20px;">
+                        <h2 id="wallet-balance-display" style="font-size: 56px; font-weight: 900; color: #fff; margin-bottom: 30px;">$0.00</h2>
+                        <button class="auth-btn" onclick="showView('deposit')">ADD FUNDS</button>
                     </div>
-                    
-                    <h3 style="margin-top: 40px; margin-bottom: 20px;">Platform Logs</h3>
-                    <div id="transaction-list" style="background: var(--bg-card); border-radius: 24px; padding: 20px; border: 1px solid var(--glass-border);">
-                        <p style="text-align: center; color: var(--text-dim); padding: 20px;">No recent activity logged.</p>
-                    </div>
+                    <h3 style="margin-top: 30px; font-size: 16px; color: #555;">RECENT LOGS</h3>
+                    <div id="transaction-list" style="margin-top: 15px;"></div>
                 </div>
 
-                <!-- ORDERS VIEW -->
                 <div id="screen-orders" class="view">
-                    <h2 style="font-family: 'Outfit', sans-serif; font-size: 32px; margin-bottom: 30px;">Purchase History</h2>
+                    <h2 style="font-weight: 900; margin-bottom: 25px; letter-spacing: -1px;">YOUR SUBSCRIPTIONS</h2>
                     <div id="orders-list" class="tool-grid"></div>
                 </div>
 
-                <!-- DEPOSIT VIEW -->
                 <div id="screen-deposit" class="view">
-                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px;">
-                        <button onclick="showView('wallet')" style="background: var(--bg-card); border: 1px solid var(--glass-border); color: white; width: 48px; height: 48px; border-radius: 16px; display: flex; align-items: center; justify-content: center;"><i data-lucide="chevron-left"></i></button>
-                        <h2 style="font-family: 'Outfit', sans-serif; font-size: 24px;">Secure Deposit</h2>
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
+                        <i data-lucide="chevron-left" onclick="showView('wallet')" style="cursor: pointer;"></i>
+                        <h2 style="font-size: 20px; font-weight: 800;">DEPOSIT FUNDS</h2>
                     </div>
-                    
                     <div class="tool-card">
-                        <p style="color: var(--text-dim); margin-bottom: 20px;">Enter the amount you wish to add to your account balance.</p>
-                        <div class="auth-input-group">
-                            <i data-lucide="dollar-sign"></i>
-                            <input type="number" id="deposit-amount" class="auth-input" placeholder="Amount ($)">
-                        </div>
-                        <button class="auth-btn" onclick="initiateDeposit()" style="margin-top: 20px;">Initialize Crypto Deposit</button>
+                        <input type="number" id="deposit-amount" class="auth-input" placeholder="Amount in USD">
+                        <button class="auth-btn" onclick="initiateDeposit()">GENERATE PAYMENT LINK</button>
                     </div>
                 </div>
 
-                <!-- ADMIN DASHBOARD -->
+                <!-- ADMIN -->
                 <div id="screen-admin" class="view">
-                    <h2 style="font-family: 'Outfit', sans-serif; font-size: 32px; margin-bottom: 30px;">Elite Admin</h2>
-                    
-                    <div class="admin-tabs" style="display: flex; gap: 12px; margin-bottom: 30px; overflow-x: auto; padding-bottom: 10px;">
-                        <button class="admin-tab active" onclick="setAdminTab('inventory')" style="background: var(--bg-card); border: 1px solid var(--glass-border); color: white; padding: 10px 20px; border-radius: 12px; cursor: pointer; white-space: nowrap;">Inventory</button>
-                        <button class="admin-tab" onclick="setAdminTab('users')" style="background: var(--bg-card); border: 1px solid var(--glass-border); color: white; padding: 10px 20px; border-radius: 12px; cursor: pointer; white-space: nowrap;">User Management</button>
-                        <button class="admin-tab" onclick="setAdminTab('all-orders')" style="background: var(--bg-card); border: 1px solid var(--glass-border); color: white; padding: 10px 20px; border-radius: 12px; cursor: pointer; white-space: nowrap;">Global Orders</button>
-                        <button class="admin-tab" onclick="setAdminTab('logs')" style="background: var(--bg-card); border: 1px solid var(--glass-border); color: white; padding: 10px 20px; border-radius: 12px; cursor: pointer; white-space: nowrap;">System Logs</button>
+                    <h2 style="font-weight: 900; margin-bottom: 25px;">ADMIN CONTROL</h2>
+                    <div class="admin-tabs" style="display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto;">
+                        <button class="auth-btn" style="padding: 8px 15px; font-size: 11px; width: auto;" onclick="setAdminTab('inventory')">INVENTORY</button>
+                        <button class="auth-btn" style="padding: 8px 15px; font-size: 11px; width: auto; background: #111; color: #fff;" onclick="setAdminTab('users')">USERS</button>
+                        <button class="auth-btn" style="padding: 8px 15px; font-size: 11px; width: auto; background: #111; color: #fff;" onclick="setAdminTab('logs')">LOGS</button>
                     </div>
-
                     <div id="admin-inventory" class="admin-sub-view active">
                         <div class="tool-card">
-                            <h3 style="margin-bottom: 20px;">Update Inventory</h3>
-                            <input type="text" id="admin-p-name" class="auth-input" placeholder="Product Name" style="margin-bottom: 12px;">
-                            <input type="number" id="admin-p-price" class="auth-input" placeholder="Price ($)" style="margin-bottom: 12px;">
-                            <textarea id="admin-p-desc" class="auth-input" placeholder="Detailed Description" style="margin-bottom: 12px; height: 100px; padding-top: 15px;"></textarea>
-                            <input type="text" id="admin-p-img-url" class="auth-input" placeholder="Image URL (Direct link)" style="margin-bottom: 20px;">
-                            <button class="auth-btn" onclick="saveProduct()">Push to Catalog</button>
+                            <input type="text" id="admin-p-name" class="auth-input" placeholder="Product Name">
+                            <input type="number" id="admin-p-price" class="auth-input" placeholder="Price">
+                            <textarea id="admin-p-desc" class="auth-input" placeholder="Description" style="height: 80px;"></textarea>
+                            <input type="text" id="admin-p-img-url" class="auth-input" placeholder="Img URL">
+                            <button class="auth-btn" onclick="saveProduct()">SAVE TO CATALOG</button>
                         </div>
                     </div>
-
                     <div id="admin-users" class="admin-sub-view">
-                        <div class="tool-card" style="padding: 15px;">
-                            <div id="admin-users-list"></div>
-                        </div>
+                        <div class="tool-card" id="admin-users-list"></div>
                     </div>
-
-                    <div id="admin-all-orders" class="admin-sub-view">
-                        <div class="tool-card" style="padding: 15px;">
-                            <div id="admin-orders-list"></div>
-                        </div>
-                    </div>
-
                     <div id="admin-logs" class="admin-sub-view">
-                        <div class="tool-card" style="padding: 15px;">
-                            <div id="admin-system-logs" style="font-size: 13px; line-height: 1.6;"></div>
-                        </div>
+                        <div class="tool-card" id="admin-system-logs" style="font-size: 12px; color: #888;"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- NAVIGATION -->
             <nav class="nav-bar">
-                <a href="#" class="nav-item active" onclick="showView('home')"><i data-lucide="home"></i><span>Store</span></a>
-                <a href="#" class="nav-item" onclick="showView('wallet')"><i data-lucide="wallet"></i><span>Wallet</span></a>
-                <a href="#" class="nav-item" onclick="showView('orders')"><i data-lucide="shopping-bag"></i><span>Orders</span></a>
-                <a href="#" id="nav-admin" class="nav-item" style="display: none;" onclick="showView('admin')"><i data-lucide="shield-check"></i><span>Admin</span></a>
+                <a href="#" class="nav-item active" onclick="showView('home')"><i data-lucide="layout-grid"></i><span>CATALOG</span></a>
+                <a href="#" class="nav-item" onclick="showView('wallet')"><i data-lucide="wallet"></i><span>WALLET</span></a>
+                <a href="#" class="nav-item" onclick="showView('orders')"><i data-lucide="package"></i><span>ORDERS</span></a>
+                <a href="#" id="nav-admin" class="nav-item" style="display: none;" onclick="showView('admin')"><i data-lucide="shield"></i><span>ADMIN</span></a>
             </nav>
         </div>
     </div>

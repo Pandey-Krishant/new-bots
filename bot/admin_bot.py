@@ -80,7 +80,7 @@ async def get_logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.callback_query.message.edit_text(text, parse_mode='HTML')
 
-async def main():
+def main():
     if not ADMIN_BOT_TOKEN:
         print("❌ Error: ADMIN_BOT_TOKEN not found in .env")
         return
@@ -93,12 +93,7 @@ async def main():
     application.add_handler(CallbackQueryHandler(admin_button_handler))
     
     print("Admin Control Bot (2nd Bot) is starting...")
-    await application.initialize()
-    await application.start()
-    await application.updater.start_polling()
-    print("Admin Bot Polling...")
-    while True:
-        await asyncio.sleep(3600)
+    application.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

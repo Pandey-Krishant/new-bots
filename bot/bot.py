@@ -93,15 +93,5 @@ if __name__ == "__main__":
     application = Application.builder().token(BOT_TOKEN).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(button_handler))
-    
-    print(f"Bot started successfully...")
-    try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(application.initialize())
-        loop.run_until_complete(application.start())
-        loop.run_until_complete(application.updater.start_polling())
-        print("Polling started...")
-        loop.run_forever()
-    except (KeyboardInterrupt, SystemExit):
-        pass
+    print("Bot started successfully...")
+    application.run_polling(drop_pending_updates=True)

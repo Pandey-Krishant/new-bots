@@ -15,7 +15,11 @@ db = Database()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
-    await db.register_user(user.id, user.username or user.first_name)
+    logging.info(f"Start command received from {user.id}")
+    try:
+        await db.register_user(user.id, user.username or user.first_name)
+    except Exception as e:
+        logging.error(f"DB Registration failed: {e}")
     
     keyboard = [
         [InlineKeyboardButton("🚀 Launch Elite Store", web_app=WebAppInfo(url=WEBAPP_URL))],

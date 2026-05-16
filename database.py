@@ -1,0 +1,66 @@
+import motor.motor_asyncio
+from datetime import datetime
+from config import MONGO_URI, DB_NAME
+
+class Database:
+    def __init__(self):
+        self.client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URI)
+        self.db = self.client[DB_NAME]
+        self.users = self.db.users
+        self.plans = self.db.plans
+        self.orders = self.db.orders
+        self.wallets = self.db.wallets
+
+    # User Methods
+    async def get_user(self, user_id):
+        return await self.users.find_one({"user_id": user_id})
+
+    async def register_user(self, user_id, username):
+        user = await self.get_user(user_id)
+        if not user:
+            await self.users.insert_one({
+                "user_id": user_id,
+                "username": username,
+                "balance": 0.0,
+                "joined_at": datetime.utcnow()
+            })
+
+    async def update_balance(self, user_id, amount):
+        await self.users.update_one({"user_id": user_id}, {"$inc": {"balance": amount}})
+
+    # Plan Methods
+    async def get_all_plans(self):
+        return await self.plans.find({"is_active": True}).to_list(length=100)
+
+    async def get_plan_by_id(self, plan_id):
+        return await self.plans.find_one({"_id": plan_id})
+
+    # Order Methods
+    async def create_order(self, user_id, username, plan_id, plan_name, quantity, price, crypto_network, txid):
+        order = {
+            "user_id": user_id,
+            "username": username,
+            "plan_id": plan_id,
+            "plan_name": plan_name,
+            "quantity": quantity,
+            "total_price": price * quantity,
+            "crypto_network": crypto_network,
+            "txid": txid,
+            "status": "Pending",
+            "timestamp": datetime.utcnow()
+        }
+        result = await self.orders.insert_one(order)
+        return result.inserted_id
+
+    async def get_user_orders(self, user_id):
+        return await self.orders.find({"user_id": user_id}).sort("timestamp", -1).to_list(length=50)
+
+    # Wallet Methods
+    async def get_wallet_address(self, network):
+        wallet = await self.wallets.find_one({"network": network})
+        return wallet["address"] if wallet else None
+
+    async def get_all_wallets(self):
+        return await self.wallets.find().to_list(length=50)
+
+db = Database()

@@ -65,15 +65,32 @@ function renderLogs() {
         list.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-dim);">No system logs yet.</div>`;
         return;
     }
+
+    const getIcon = (action) => {
+        if (action.includes('Login')) return 'log-in';
+        if (action.includes('Registration')) return 'user-plus';
+        if (action.includes('Deposit')) return 'wallet';
+        if (action.includes('Payment')) return 'credit-card';
+        if (action.includes('Logout')) return 'log-out';
+        return 'activity';
+    };
+
     list.innerHTML = logs.map(l => `
-        <div class="tool-card" style="padding: 20px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                <span style="color: var(--primary); font-weight: 800;">${l.action}</span>
-                <span style="font-size: 11px; color: var(--text-dim);">${new Date(l.timestamp).toLocaleTimeString()}</span>
+        <div class="log-item">
+            <div class="log-icon">
+                <i data-lucide="${getIcon(l.action)}" style="width: 20px;"></i>
             </div>
-            <p style="font-size: 14px;"><strong>${l.username}</strong>: ${l.details}</p>
+            <div class="log-info">
+                <div class="log-header">
+                    <span class="log-action">${l.action}</span>
+                    <span class="log-time">${new Date(l.timestamp).toLocaleTimeString()}</span>
+                </div>
+                <p class="log-details"><strong>${l.username}</strong>: ${l.details}</p>
+            </div>
         </div>
     `).join('');
+    
+    if (window.lucide) window.lucide.createIcons();
 }
 
 function toggleAuth(type) {

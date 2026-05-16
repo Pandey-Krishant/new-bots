@@ -90,3 +90,36 @@ body {
 
 .notification { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: #1e293b; border-left: 5px solid var(--primary); padding: 15px 30px; border-radius: 15px; color: white; font-weight: 700; z-index: 9999; transition: 0.4s; }
 .notification.show { transform: translateX(-50%) translateY(0); }
+
+/* Activity Log Styles */
+.log-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 15px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    transition: 0.3s;
+}
+.log-item:hover { background: rgba(255, 255, 255, 0.05); border-color: var(--primary); }
+.log-icon {
+    width: 45px; height: 45px;
+    background: rgba(139, 92, 246, 0.1);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--primary);
+}
+.log-info { flex-grow: 1; }
+.log-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.log-action { font-weight: 800; font-size: 15px; color: var(--text-main); }
+.log-time { font-size: 11px; color: var(--text-dim); }
+.log-details { font-size: 13px; color: var(--text-dim); }
+
+.net-btn {
+    background: #0f172a; border: 1px solid var(--glass-border);
+    padding: 15px; border-radius: 16px; text-align: center;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.3s;
+}
+.net-btn.selected { border-color: var(--primary); background: rgba(139, 92, 246, 0.1); color: var(--primary); }

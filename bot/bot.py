@@ -16,10 +16,9 @@ db = Database()
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     logging.info(f"Start command received from {user.id}")
-    try:
-        await db.register_user(user.id, user.username or user.first_name)
-    except Exception as e:
-        logging.error(f"DB Registration failed: {e}")
+    
+    # Run DB registration in background to keep the bot response FAST (Instant)
+    asyncio.create_task(db.register_user(user.id, user.username or user.first_name))
     
     keyboard = [
         [InlineKeyboardButton("🚀 Launch Elite Store", web_app=WebAppInfo(url=WEBAPP_URL))],

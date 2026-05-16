@@ -20,17 +20,31 @@ async def start_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Access Denied. This bot is for Admins only.")
         return
     
+    keyboard = [
+        [InlineKeyboardButton("📊 View Stats", callback_data='admin_stats')],
+        [InlineKeyboardButton("📜 View Logs", callback_data='admin_logs')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
     await update.message.reply_text(
         "<b>🛡 Welcome to Admin Control Bot</b>\n\n"
-        "This bot monitors system activity and allows quick management.\n\n"
-        "Commands:\n"
-        "• /stats - View store statistics\n"
-        "• /logs - View recent system logs",
+        "Use the buttons below to manage your store in real-time.",
+        reply_markup=reply_markup,
         parse_mode='HTML'
     )
 
+async def admin_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+    
+    if query.data == 'admin_stats':
+        await get_stats(update, context)
+    elif query.data == 'admin_logs':
+        await get_logs(update, context)
+
 async def get_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id not in ADMIN_IDS: return
+    user_id = update.effective_user.id
+    if user_id not in ADMIN_IDS: return
     
     users = await db.get_all_users()
     orders = await db.get_all_orders()
@@ -39,24 +53,32 @@ async def get_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "<b>📊 Store Statistics</b>\n\n"
         f"👥 <b>Total Users:</b> {len(users)}\n"
         f"📦 <b>Total Orders:</b> {len(orders)}\n"
-        f"💰 <b>Total Revenue:</b> ${sum(o['total_price'] for o in orders):.2f}"
+        f"💰 <b>Total Revenue:</b> ${sum(o['total_price'] for o in orders):.2f}\n\n"
+        "Click /start to return."
     )
-    await update.message.reply_text(text, parse_mode='HTML')
+    
+    if update.message:
+        await update.message.reply_text(text, parse_mode='HTML')
+    else:
+        await update.callback_query.message.edit_text(text, parse_mode='HTML')
 
 async def get_logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id not in ADMIN_IDS: return
+    user_id = update.effective_user.id
+    if user_id not in ADMIN_IDS: return
     
     logs = await db.get_logs()
     if not logs:
-        await update.message.reply_text("No logs found.")
-        return
+        text = "No logs found."
+    else:
+        text = "<b>📜 Recent System Logs:</b>\n\n"
+        for l in logs[:15]:
+            time_str = l['timestamp'].strftime('%H:%M:%S')
+            text += f"• <code>[{time_str}]</code> <b>{l['action']}</b>: {l.get('details', '')}\n"
     
-    text = "<b>📜 Recent System Logs:</b>\n\n"
-    for l in logs[:10]:
-        time_str = l['timestamp'].strftime('%H:%M:%S')
-        text += f"• <code>[{time_str}]</code> <b>{l['action']}</b>: {l.get('details', '')}\n"
-    
-    await update.message.reply_text(text, parse_mode='HTML')
+    if update.message:
+        await update.message.reply_text(text, parse_mode='HTML')
+    else:
+        await update.callback_query.message.edit_text(text, parse_mode='HTML')
 
 async def main():
     if not ADMIN_BOT_TOKEN:
@@ -68,6 +90,7 @@ async def main():
     application.add_handler(CommandHandler("start", start_admin))
     application.add_handler(CommandHandler("stats", get_stats))
     application.add_handler(CommandHandler("logs", get_logs))
+    application.add_handler(CallbackQueryHandler(admin_button_handler))
     
     print("Admin Control Bot (2nd Bot) is starting...")
     await application.initialize()

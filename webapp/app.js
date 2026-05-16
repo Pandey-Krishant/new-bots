@@ -2,7 +2,7 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 tg.ready();
 
-// State Management
+// State
 const state = {
     user: null,
     currentView: 'home',
@@ -17,67 +17,108 @@ const state = {
     orders: []
 };
 
-// --- INITIALIZATION ---
-function init() {
-    // Check if user is already "logged in" via localStorage
-    const savedUser = localStorage.getItem('app_user');
-    if (savedUser) {
-        state.user = JSON.parse(savedUser);
-        showMainApp();
-    }
+// --- AUTH LOGIC ---
+function toggleAuth(type) {
+    const loginForm = document.getElementById('form-login');
+    const registerForm = document.getElementById('form-register');
     
-    renderTools();
-    lucide.createIcons();
+    if (type === 'register') {
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'block';
+    } else {
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+    }
 }
 
-// --- AUTHENTICATION ---
-function handleLogin() {
-    const usernameInput = document.getElementById('login-username').value;
-    if (!usernameInput) {
-        tg.showAlert('Please enter your Username or Telegram ID');
+function handleRegister() {
+    const username = document.getElementById('reg-username').value;
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-password').value;
+
+    if (!username || !email || !password) {
+        tg.showAlert('All fields are required!');
         return;
     }
 
-    // Simulate login
-    state.user = {
-        username: usernameInput.startsWith('@') ? usernameInput : '@' + usernameInput,
-        balance: 0.00
-    };
+    // Save user to "database" (localStorage)
+    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+    if (users.find(u => u.email === email)) {
+        tg.showAlert('User with this email already exists!');
+        return;
+    }
 
-    localStorage.setItem('app_user', JSON.stringify(state.user));
-    tg.HapticFeedback.notificationOccurred('success');
-    showMainApp();
+    const newUser = { username, email, password, balance: 0.00, orders: [] };
+    users.push(newUser);
+    localStorage.setItem('registered_users', JSON.stringify(users));
+
+    tg.showAlert('Registration successful! Please login.');
+    toggleAuth('login');
+}
+
+function handleLogin() {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+
+    if (!email || !password) {
+        tg.showAlert('Please fill in all fields');
+        return;
+    }
+
+    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+    const user = users.find(u => u.email === email && u.password === password);
+
+    if (user) {
+        state.user = user;
+        localStorage.setItem('session_user', JSON.stringify(user));
+        tg.HapticFeedback.notificationOccurred('success');
+        showMainApp();
+    } else {
+        tg.showAlert('Invalid email or password!');
+    }
 }
 
 function handleLogout() {
-    localStorage.removeItem('app_user');
+    localStorage.removeItem('session_user');
     state.user = null;
     document.getElementById('main-content').style.display = 'none';
-    document.getElementById('screen-login').classList.add('active');
+    document.getElementById('screen-auth').classList.add('active');
     tg.HapticFeedback.impactOccurred('medium');
 }
 
 function showMainApp() {
-    document.getElementById('screen-login').classList.remove('active');
+    document.getElementById('screen-auth').classList.remove('active');
     document.getElementById('main-content').style.display = 'block';
     document.getElementById('display-username').innerText = state.user.username;
+    document.getElementById('display-balance').innerText = `$${state.user.balance.toFixed(2)}`;
     showView('home');
 }
 
-// --- ROUTING ---
+// --- INITIALIZATION ---
+function init() {
+    const session = localStorage.getItem('session_user');
+    if (session) {
+        state.user = JSON.parse(session);
+        showMainApp();
+    }
+    renderTools();
+    lucide.createIcons();
+}
+
+// --- ROUTING & UI ---
 function showView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById(`screen-${viewId}`).classList.add('active');
-    
+    const target = document.getElementById(`screen-${viewId}`);
+    if (target) target.classList.add('active');
+
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     const activeNav = document.querySelector(`.nav-item[onclick*="${viewId}"]`);
     if (activeNav) activeNav.classList.add('active');
 
-    state.currentView = viewId;
     tg.HapticFeedback.selectionChanged();
+    if (viewId === 'orders') renderOrders();
 }
 
-// --- UI RENDERING ---
 function renderTools() {
     const list = document.getElementById('tools-list');
     list.innerHTML = state.tools.map(tool => `
@@ -95,29 +136,21 @@ function renderTools() {
     `).join('');
 }
 
-// --- CHECKOUT LOGIC ---
+// --- CHECKOUT ---
 function openCheckout(name, price) {
     state.selectedPlan = { name, price };
     document.getElementById('checkout-item-name').innerText = name;
     document.getElementById('checkout-total').innerText = `$${price}`;
     document.getElementById('payment-details').style.display = 'none';
-    
-    // Clear selection
     document.querySelectorAll('.net-btn').forEach(b => b.classList.remove('selected'));
-    state.selectedNetwork = null;
-
     showView('checkout');
 }
 
 function selectNetwork(network) {
     state.selectedNetwork = network;
     tg.HapticFeedback.impactOccurred('light');
+    document.querySelectorAll('.net-btn').forEach(btn => btn.classList.toggle('selected', btn.innerText === network));
 
-    document.querySelectorAll('.net-btn').forEach(btn => {
-        btn.classList.toggle('selected', btn.innerText === network);
-    });
-
-    // Mock Address Generation (In real app, fetch from NOWPayments or Backend)
     const mockAddresses = {
         'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-',
         'Bitcoin (BTC)': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
@@ -126,59 +159,39 @@ function selectNetwork(network) {
 
     document.getElementById('pay-amount').innerText = `$${state.selectedPlan.price}`;
     document.getElementById('pay-network').innerText = network;
-    document.getElementById('wallet-address').innerText = mockAddresses[network] || 'GENERIC_WALLET_ADDRESS_HERE';
+    document.getElementById('wallet-address').innerText = mockAddresses[network] || 'TQ...WALLET_ADDR';
     document.getElementById('payment-details').style.display = 'block';
-    
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
 
 function copyAddress() {
     const addr = document.getElementById('wallet-address').innerText;
     navigator.clipboard.writeText(addr).then(() => {
-        tg.showAlert('Address copied to clipboard!');
+        tg.showAlert('Address copied!');
         tg.HapticFeedback.notificationOccurred('success');
     });
 }
 
 function confirmPayment() {
-    tg.showConfirm('Have you sent the payment?', (ok) => {
+    tg.showConfirm('Confirm payment sent?', (ok) => {
         if (ok) {
-            const newOrder = {
-                id: Math.floor(Math.random() * 10000),
-                item: state.selectedPlan.name,
-                status: 'Pending',
-                price: state.selectedPlan.price
-            };
-            state.orders.unshift(newOrder);
-            tg.showAlert('Payment submitted! Verification usually takes 1-6 hours.');
+            const order = { id: Math.floor(Math.random()*10000), item: state.selectedPlan.name, status: 'Pending', price: state.selectedPlan.price };
+            state.orders.unshift(order);
             showView('orders');
-            renderOrders();
         }
     });
 }
 
 function renderOrders() {
     const list = document.getElementById('orders-list');
-    if (state.orders.length === 0) {
-        list.innerHTML = '<div class="empty-state">No orders found.</div>';
-        return;
-    }
-
-    list.innerHTML = state.orders.map(order => `
+    list.innerHTML = state.orders.length ? state.orders.map(o => `
         <div class="tool-card" style="margin-bottom: 12px; padding: 15px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <h4 style="font-size: 14px;">Order #${order.id}</h4>
-                    <p style="font-size: 12px; color: var(--text-dim);">${order.item}</p>
-                </div>
-                <div style="text-align: right;">
-                    <p style="color: var(--primary); font-weight: 700;">$${order.price}</p>
-                    <span style="font-size: 10px; padding: 4px 8px; background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-radius: 6px;">${order.status}</span>
-                </div>
+            <div style="display: flex; justify-content: space-between;">
+                <div><h4>Order #${o.id}</h4><p>${o.item}</p></div>
+                <div style="text-align: right;"><p>$${o.price}</p><span>${o.status}</span></div>
             </div>
         </div>
-    `).join('');
+    `).join('') : '<div class="empty-state">No orders yet.</div>';
 }
 
-// Start the app
 init();

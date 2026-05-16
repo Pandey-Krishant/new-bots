@@ -15,22 +15,39 @@
     <div class="bg-glow"></div>
     
     <div id="app">
-        <!-- LOGIN SCREEN -->
-        <div id="screen-login" class="screen active">
+        <!-- AUTH SCREEN (Login/Register) -->
+        <div id="screen-auth" class="screen active">
             <div class="login-container">
                 <div class="logo">🚀</div>
-                <h1>Welcome Back</h1>
-                <p>Login to access your premium AI dashboard</p>
-                <div class="input-group">
-                    <input type="text" id="login-username" placeholder="Username / Telegram ID">
-                    <input type="password" id="login-password" placeholder="Password (Optional)">
+                
+                <!-- Login Form -->
+                <div id="form-login">
+                    <h1>Welcome Back</h1>
+                    <p>Login with your credentials</p>
+                    <div class="input-group">
+                        <input type="email" id="login-email" placeholder="Email Address">
+                        <input type="password" id="login-password" placeholder="Password">
+                    </div>
+                    <button class="primary-btn" onclick="handleLogin()">Login</button>
+                    <p class="switch-text">Don't have an account? <span onclick="toggleAuth('register')">Register Now</span></p>
                 </div>
-                <button class="primary-btn" onclick="handleLogin()">Enter Dashboard</button>
-                <div class="login-footer">Powered by Telegram WebApp SDK</div>
+
+                <!-- Register Form -->
+                <div id="form-register" style="display: none;">
+                    <h1>Create Account</h1>
+                    <p>Join the AI Premium community</p>
+                    <div class="input-group">
+                        <input type="text" id="reg-username" placeholder="Username">
+                        <input type="email" id="reg-email" placeholder="Email Address">
+                        <input type="password" id="reg-password" placeholder="Password">
+                    </div>
+                    <button class="primary-btn" onclick="handleRegister()">Register</button>
+                    <p class="switch-text">Already have an account? <span onclick="toggleAuth('login')">Login Now</span></p>
+                </div>
             </div>
         </div>
 
-        <!-- MAIN APP CONTENT (Hidden until login) -->
+        <!-- MAIN APP CONTENT -->
         <div id="main-content" style="display: none;">
             <div class="container">
                 <!-- HOME SCREEN -->
@@ -58,26 +75,21 @@
 
                     <section class="tools">
                         <div class="section-header"><h3>AI Subscriptions</h3></div>
-                        <div class="tool-grid" id="tools-list">
-                            <!-- Tools populated by JS -->
-                        </div>
+                        <div class="tool-grid" id="tools-list"></div>
                     </section>
                 </div>
 
-                <!-- CHECKOUT SCREEN (Matching reference image) -->
+                <!-- CHECKOUT SCREEN -->
                 <div id="screen-checkout" class="view">
                     <div class="checkout-header">
                         <button class="back-btn" onclick="showView('home')"><i data-lucide="chevron-left"></i></button>
                         <h2>🛒 Order Summary</h2>
                     </div>
-                    
                     <div class="summary-card">
                         <div class="summary-item"><span>Item:</span> <span id="checkout-item-name">Plan Name</span></div>
                         <div class="summary-total">Total Amount: <span id="checkout-total">$0.00</span></div>
                     </div>
-
                     <p class="instruction-text">Please select your preferred cryptocurrency/network for payment:</p>
-                    
                     <div class="network-grid">
                         <div class="net-btn" onclick="selectNetwork('USDT (TRC-20)')">USDT (TRC-20)</div>
                         <div class="net-btn" onclick="selectNetwork('USDT (BEP-20)')">USDT (BEP-20)</div>
@@ -90,30 +102,18 @@
                         <div class="net-btn" onclick="selectNetwork('Litecoin (LTC)')">Litecoin (LTC)</div>
                         <div class="net-btn" onclick="selectNetwork('Tron (TRX)')">Tron (TRX)</div>
                     </div>
-
                     <div id="payment-details" style="display: none; margin-top: 24px;">
-                        <div class="alert warning">
-                            ⚠️ Please send exactly <span id="pay-amount">$0.00</span> worth of <span id="pay-network">TON</span> to the address below:
-                        </div>
-                        <div class="address-box" onclick="copyAddress()">
-                            <code id="wallet-address">UQ...MZA</code>
-                            <i data-lucide="copy"></i>
-                        </div>
-                        <p class="tap-hint">(Tap the address to copy)</p>
-                        <div class="alert info">
-                            📌 NOTE: KINDLY SELECT THE NETWORK WHICH YOU HAVE CHOSEN, OTHERWISE ASSETS WILL BE LOST.
-                        </div>
-                        <button class="primary-btn" style="margin-top: 20px;" onclick="confirmPayment()">✅ I Have Paid</button>
+                        <div class="alert warning">⚠️ Send exactly <span id="pay-amount"></span> worth of <span id="pay-network"></span> to the address:</div>
+                        <div class="address-box" onclick="copyAddress()"><code id="wallet-address"></code><i data-lucide="copy"></i></div>
+                        <p class="tap-hint">(Tap to copy)</p>
+                        <button class="primary-btn" onclick="confirmPayment()">✅ I Have Paid</button>
                     </div>
                 </div>
 
                 <!-- ORDERS SCREEN -->
                 <div id="screen-orders" class="view">
                     <div class="view-header"><h2>📦 My Orders</h2></div>
-                    <div class="orders-list" id="orders-list">
-                        <!-- Orders populated by JS -->
-                        <div class="empty-state">No orders found.</div>
-                    </div>
+                    <div class="orders-list" id="orders-list"></div>
                 </div>
 
                 <!-- WALLET SCREEN -->
@@ -121,10 +121,9 @@
                     <div class="view-header"><h2>💳 My Wallet</h2></div>
                     <div class="wallet-card">
                         <p>Total Balance</p>
-                        <h3>$0.00</h3>
+                        <h3 id="display-balance">$0.00</h3>
                         <div class="wallet-actions">
-                            <button onclick="tg.showAlert('Deposit system coming soon!')"><i data-lucide="plus-circle"></i> Add Funds</button>
-                            <button><i data-lucide="history"></i> History</button>
+                            <button onclick="tg.showAlert('Coming soon!')"><i data-lucide="plus-circle"></i> Add Funds</button>
                         </div>
                     </div>
                 </div>

@@ -40,6 +40,19 @@ body {
     background: radial-gradient(circle at top right, var(--primary-glow), transparent);
 }
 
+.switch-text {
+    margin-top: 24px;
+    font-size: 14px;
+    color: var(--text-dim);
+}
+
+.switch-text span {
+    color: var(--primary);
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
 .login-container {
     width: 100%;
     max-width: 400px;

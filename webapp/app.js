@@ -171,10 +171,18 @@ function showMainApp() {
     // ADMIN CHECK
     if (state.user && state.user.email === 'admin@ai.com') {
         document.getElementById('nav-admin').style.display = 'flex';
+    } else {
+        document.getElementById('nav-admin').style.display = 'none';
     }
     
     updateWalletDisplay();
-    renderTools();
+    fetchPlans();
+}
+
+function handleLogout() {
+    localStorage.removeItem('session_user');
+    state.user = null;
+    location.reload(); // Hard reset for security
 }
 
 async function handleAdminAdd() {

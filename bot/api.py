@@ -230,10 +230,12 @@ async def create_payment(request: Request):
     user = await get_current_user(request)
     data = await request.json()
     amount = data.get("amount")
+    network = data.get("network", "usdttrc20")
+    
     r = requests.post("https://api.nowpayments.io/v1/payment", json={
         "price_amount": float(amount),
         "price_currency": "usd",
-        "pay_currency": "usdttrc20",
+        "pay_currency": network,
         "order_id": f"DEP_{user['user_id']}_{int(time.time())}"
     }, headers={"x-api-key": NOWPAYMENTS_API_KEY, "Content-Type": "application/json"})
     return r.json()

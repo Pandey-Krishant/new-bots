@@ -42,7 +42,7 @@ body {
 .section-header { margin: 60px 0 30px; }
 .section-header h3 { font-size: 30px; font-weight: 800; }
 
-.tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 25px; }
+.tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
 .tool-card {
     background: var(--bg-card); border: 1px solid var(--glass-border);
     border-radius: 28px; padding: 28px; cursor: pointer; transition: 0.3s;
@@ -123,3 +123,15 @@ body {
     font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.3s;
 }
 .net-btn.selected { border-color: var(--primary); background: rgba(139, 92, 246, 0.1); color: var(--primary); }
+
+/* Mobile Responsiveness for Telegram Mini App */
+@media (max-width: 768px) {
+    .featured-card { flex-direction: column; text-align: center; padding: 25px; gap: 15px; }
+    .hero h1 { font-size: 38px; }
+    .featured-icon { font-size: 60px; }
+    .featured-info h2 { font-size: 24px; }
+    .featured-price { font-size: 22px; }
+    #display-balance { font-size: 42px !important; }
+    .tool-header { flex-direction: column; text-align: center; }
+    .tool-icon { margin: 0 auto; }
+}

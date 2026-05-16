@@ -5,6 +5,7 @@ tg.ready();
 // --- CONFIGURATION ---
 const ADMIN_BOT_TOKEN = "8728790870:AAGZZqVttTR3mQZFfXMtR3sdRlcVSbTHiRc";
 const ADMIN_CHAT_ID = "1661187898"; 
+const API_URL = "https://new-bots.vercel.app/api"; // Defaulting to Vercel deployment URL if running there, or change to localhost for dev
 
 // State
 const state = {
@@ -157,7 +158,7 @@ async function checkAccess(name, price) {
                 'Content-Type': 'application/json',
                 'Authorization': `local_${state.user.user_id}` // Mock auth for API
             },
-            body: JSON.stringify({ amount: price })
+            body: JSON.stringify({ amount: price, network: 'usdttrc20' }) // Default for direct product buy
         });
         const data = await response.json();
         if (data.invoice_url) {
@@ -203,6 +204,22 @@ async function confirmDeposit() {
     notify('🔄 Redirecting to secure gateway...', true);
     const amount = state.selectedPlan.price || 10.0;
     
+    const networkMap = {
+        'USDT (TRC-20)': 'usdttrc20',
+        'USDT (BEP-20)': 'usdtbsc',
+        'TON Coin': 'ton',
+        'Bitcoin (BTC)': 'btc',
+        'Ethereum (ETH)': 'eth',
+        'Litecoin (LTC)': 'ltc',
+        'Dogecoin (DOGE)': 'doge',
+        'Solana (SOL)': 'sol',
+        'BNB (Smart Chain)': 'bnbbsc',
+        'TRX (Tron)': 'trx',
+        'XRP (Ripple)': 'xrp',
+        'Polygon (MATIC)': 'matic'
+    };
+    const payCurrency = networkMap[state.selectedNetwork] || 'usdttrc20';
+
     try {
         const response = await fetch(`${API_URL}/create-payment`, {
             method: 'POST',
@@ -210,7 +227,7 @@ async function confirmDeposit() {
                 'Content-Type': 'application/json',
                 'Authorization': `local_${state.user.user_id}`
             },
-            body: JSON.stringify({ amount: amount })
+            body: JSON.stringify({ amount: amount, network: payCurrency })
         });
         const data = await response.json();
         if (data.invoice_url) {

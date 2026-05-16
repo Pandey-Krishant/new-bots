@@ -116,12 +116,40 @@ function renderTools() {
 }
 
 // --- FLOWS ---
-function checkAccess(name, price) {
+async function checkAccess(name, price) {
     state.selectedPlan = { name, price };
-    const payAmt = document.getElementById('pay-required-amount');
-    if (payAmt) payAmt.innerText = `$${price}`;
-    document.getElementById('deposit-details').style.display = 'none';
-    showView('deposit');
+    
+    // NOWPAYMENTS REDIRECT
+    notify('🔄 Generating Secure Invoice...', true);
+    try {
+        // We use the same endpoint as before but ensure it works with our local state
+        const response = await fetch(`${API_URL}/create-payment`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `local_${state.user.user_id}` // Mock auth for API
+            },
+            body: JSON.stringify({ amount: price })
+        });
+        const data = await response.json();
+        if (data.invoice_url) {
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.openLink(data.invoice_url);
+            } else {
+                window.open(data.invoice_url, '_blank');
+            }
+            addLog(state.user.username, 'Payment', `Generated invoice for ${name} ($${price})`);
+        } else {
+            notify('Checkout error, try later');
+        }
+    } catch (e) {
+        // Local Fallback if API is down
+        notify('Payment API unavailable. Proceeding to manual deposit...', false);
+        const payAmt = document.getElementById('pay-required-amount');
+        if (payAmt) payAmt.innerText = `$${price}`;
+        document.getElementById('deposit-details').style.display = 'none';
+        showView('deposit');
+    }
 }
 
 function openGenericDeposit() {
@@ -143,26 +171,44 @@ function selectDeposit(network) {
     document.getElementById('deposit-details').style.display = 'block';
 }
 
-function confirmDeposit() {
-    notify('🔄 Verifying payment...', true);
-    setTimeout(() => {
-        const amount = state.selectedPlan.price || 10.0; // Fallback for generic topup
-        state.user.balance = Number(state.user.balance) + amount;
-        updateWalletDisplay();
-        
-        // Update user in registered_users list
-        const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-        const idx = users.findIndex(u => u.email === state.user.email);
-        if (idx !== -1) {
-            users[idx] = state.user;
-            localStorage.setItem('registered_users', JSON.stringify(users));
+async function confirmDeposit() {
+    notify('🔄 Redirecting to secure gateway...', true);
+    const amount = state.selectedPlan.price || 10.0;
+    
+    try {
+        const response = await fetch(`${API_URL}/create-payment`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `local_${state.user.user_id}`
+            },
+            body: JSON.stringify({ amount: amount })
+        });
+        const data = await response.json();
+        if (data.invoice_url) {
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.openLink(data.invoice_url);
+            } else {
+                window.open(data.invoice_url, '_blank');
+            }
+            addLog(state.user.username, 'Deposit', `Generated deposit link for $${amount}`);
+        } else {
+             // Local simulation if API fails
+             setTimeout(() => {
+                state.user.balance = Number(state.user.balance) + amount;
+                updateWalletDisplay();
+                const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+                const idx = users.findIndex(u => u.email === state.user.email);
+                if (idx !== -1) { users[idx] = state.user; localStorage.setItem('registered_users', JSON.stringify(users)); }
+                localStorage.setItem('session_user', JSON.stringify(state.user));
+                addLog(state.user.username, 'Deposit', `Local simulation: Added $${amount} via ${state.selectedNetwork}`);
+                notify('💰 Deposit Successful!', true);
+                showView('home');
+            }, 2000);
         }
-
-        localStorage.setItem('session_user', JSON.stringify(state.user));
-        addLog(state.user.username, 'Deposit', `Added $${amount.toFixed(2)} to wallet via ${state.selectedNetwork}`);
-        notify('💰 Deposit Successful!', true);
-        showView('home');
-    }, 2000);
+    } catch (e) {
+        notify('Redirecting failed. Using manual verification.');
+    }
 }
 
 // --- AUTH ---

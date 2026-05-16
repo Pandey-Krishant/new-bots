@@ -62,46 +62,11 @@ function showView(viewId) {
     const navItem = document.querySelector(`.nav-item[onclick*="${viewId}"]`);
     if (navItem) navItem.classList.add('active');
     
-    if (viewId === 'admin') renderLogs();
+
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function renderLogs() {
-    const list = document.getElementById('admin-logs-list');
-    if (!list) return;
-    const logs = JSON.parse(localStorage.getItem('system_logs') || '[]');
-    if (logs.length === 0) {
-        list.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-dim);">No system logs yet.</div>`;
-        return;
-    }
-
-    const getIcon = (action) => {
-        if (action.includes('Login')) return 'log-in';
-        if (action.includes('Registration')) return 'user-plus';
-        if (action.includes('Deposit')) return 'wallet';
-        if (action.includes('Payment')) return 'credit-card';
-        if (action.includes('Logout')) return 'log-out';
-        return 'activity';
-    };
-
-    list.innerHTML = logs.map(l => `
-        <div class="log-item">
-            <div class="log-icon">
-                <i data-lucide="${getIcon(l.action)}" style="width: 20px;"></i>
-            </div>
-            <div class="log-info">
-                <div class="log-header">
-                    <span class="log-action">${l.action}</span>
-                    <span class="log-time">${new Date(l.timestamp).toLocaleTimeString()}</span>
-                </div>
-                <p class="log-details"><strong>${l.username}</strong>: ${l.details}</p>
-            </div>
-        </div>
-    `).join('');
-    
-    if (window.lucide) window.lucide.createIcons();
-}
 
 function toggleAuth(type) {
     document.getElementById('form-login').style.display = type === 'register' ? 'none' : 'block';

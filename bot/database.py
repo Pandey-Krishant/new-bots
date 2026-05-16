@@ -1,6 +1,10 @@
 import motor.motor_asyncio
 from datetime import datetime
-from config import MONGO_URI, DB_NAME
+
+try:
+    from .config import MONGO_URI, DB_NAME
+except ImportError:  # Allow running as a script
+    from config import MONGO_URI, DB_NAME
 
 class Database:
     def __init__(self):
@@ -15,6 +19,7 @@ class Database:
         self.plans = self.db.plans
         self.orders = self.db.orders
         self.wallets = self.db.wallets
+        print('Connected to MongoDB')
 
     # User Methods
     async def get_user(self, user_id):
@@ -27,7 +32,7 @@ class Database:
                 "user_id": user_id,
                 "username": username,
                 "email": email,
-                "password": password, # In production, hash this!
+                "password": password,
                 "balance": 0.0,
                 "joined_at": datetime.utcnow()
             })
@@ -109,4 +114,3 @@ class Database:
     async def get_logs(self):
         return await self.db.logs.find().sort("timestamp", -1).to_list(length=100)
 
-db = Database()

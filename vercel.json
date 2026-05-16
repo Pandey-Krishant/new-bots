@@ -2,9 +2,11 @@
   "version": 2,
   "name": "ai-subscription-mini-app",
   "builds": [
-    { "src": "webapp/**", "use": "@vercel/static" }
+    { "src": "webapp/**", "use": "@vercel/static" },
+    { "src": "api/index.py", "use": "@vercel/python" }
   ],
   "routes": [
+    { "src": "/api/(.*)", "dest": "/api/index.py" },
     { "src": "/(.*)", "dest": "/webapp/$1" }
   ]
 }

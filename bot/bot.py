@@ -2,7 +2,10 @@ import logging
 import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
-from config import BOT_TOKEN, WEBAPP_URL, ADMIN_IDS
+try:
+    from .config import BOT_TOKEN, WEBAPP_URL, ADMIN_IDS
+except ImportError:  # Allow running as a script: `python bot/bot.py`
+    from config import BOT_TOKEN, WEBAPP_URL, ADMIN_IDS
 from database import Database
 
 # Enable logging

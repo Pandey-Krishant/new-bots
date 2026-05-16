@@ -1,354 +1,151 @@
 const tg = window.Telegram.WebApp;
-if (tg) {
-    tg.expand();
-    tg.ready();
-}
+tg.expand();
+tg.ready();
 
-const API_URL = 'http://localhost:8000';
+// --- CONFIGURATION ---
+const ADMIN_BOT_TOKEN = "8728790870:AAGZZqVttTR3mQZFfXMtR3sdRlcVSbTHiRc";
+const ADMIN_CHAT_ID = "1661187898"; 
+
+// State
 const state = {
     user: null,
-    plans: [],
-    token: localStorage.getItem('auth_token') || (tg ? tg.initData : null),
-    currentView: 'home'
-};
-
-// --- LOCAL DB UTILS (Hidden Logic for Persistence) ---
-const LocalDB = {
-    get(key) {
-        try { return JSON.parse(localStorage.getItem(`ldb_${key}`)) || []; } catch(e) { return []; }
-    },
-    save(key, data) { localStorage.setItem(`ldb_${key}`, JSON.stringify(data)); },
-    addUser(user) {
-        const users = this.get('users');
-        if (!users.find(u => u.email === user.email || u.username === user.username)) {
-            const newUser = { ...user, balance: 0.0, joined_at: new Date().toISOString(), user_id: Date.now(), is_admin: user.username.toLowerCase().includes('admin') };
-            users.push(newUser);
-            this.save('users', users);
-            return newUser;
-        }
-        return null;
-    },
-    getUser(identifier) { return this.get('users').find(u => u.email === identifier || u.username === identifier); },
-    updateUser(updatedUser) {
-        const users = this.get('users');
-        const idx = users.findIndex(u => u.user_id === updatedUser.user_id);
-        if (idx !== -1) { users[idx] = updatedUser; this.save('users', users); }
-    }
+    currentView: 'home',
+    selectedPlan: null,
+    selectedNetwork: null,
+    tools: [
+        { id: 1, name: 'ChatGPT Pro', brand: 'by OpenAI', price: 19.99, icon: '🤖', desc: 'Unlock GPT-4o, advanced data analysis, and private workspace.' },
+        { id: 2, name: 'Midjourney', brand: 'Design', price: 29.99, icon: '🎨', desc: 'The world\'s best AI image generator. High-speed GPU hours included.' },
+        { id: 3, name: 'Claude Pro', brand: 'by Anthropic', price: 20.00, icon: '🧠', desc: 'Access Claude 3.5 Sonnet and Opus with 5x higher usage limits.' },
+        { id: 4, name: 'Gemini Ultra', brand: 'by Google', price: 19.99, icon: '⚡', desc: 'Google\'s most capable AI model for highly complex tasks.' },
+        { id: 5, name: 'Perplexity Pro', brand: 'Search', price: 20.00, icon: '🔍', desc: 'Pro Search, file uploads, and choice of AI models (Claude/GPT).' },
+        { id: 6, name: 'Canva Pro', brand: 'Design', price: 12.99, icon: '✨', desc: 'Unlimited premium content, Magic Studio, and brand tools.' }
+    ],
+    orders: []
 };
 
 // --- CORE UTILS ---
-
-function notify(msg, type = 'success') {
+function notify(msg, isSuccess = false) {
     const el = document.getElementById('notification');
     el.innerText = msg;
-    el.className = `notification show ${type}`;
+    el.classList.add('show');
     setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-async function apiCall(endpoint, method = 'GET', body = null) {
-    const headers = {
-        'Authorization': state.token,
-        'Content-Type': 'application/json'
-    };
-    
-    try {
-        const options = { method, headers };
-        if (body) options.body = JSON.stringify(body);
-        
-        const response = await fetch(`${API_URL}${endpoint}`, options);
-        if (response.status === 401) {
-            handleUnauthorized();
-            return null;
-        }
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.detail || 'Request failed');
-        }
-        return await response.json();
-    } catch (e) {
-        console.warn('API Sync issue');
-        return null;
-    }
-}
-
-function handleUnauthorized() {
-    state.token = null;
-    state.user = null;
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('current_user_id');
-    document.getElementById('screen-auth').style.display = 'flex';
-    document.getElementById('main-content').style.display = 'none';
-}
-
-// --- AUTH FLOWS ---
-
-function toggleAuth(type) {
-    document.getElementById('auth-login-view').style.display = type === 'reg' ? 'none' : 'block';
-    document.getElementById('auth-reg-view').style.display = type === 'reg' ? 'block' : 'none';
-    lucide.createIcons();
-}
-
-async function handleLogin() {
-    const identifier = document.getElementById('login-identifier').value;
-    const password = document.getElementById('login-password').value;
-    
-    if (!identifier || !password) return notify('Please fill all fields', 'error');
-    
-    notify('Authenticating...', 'success');
-    
-    // Local check first
-    const localUser = LocalDB.getUser(identifier);
-    if (localUser && localUser.password === password) {
-        state.user = localUser;
-        state.token = `local_${localUser.user_id}`;
-        localStorage.setItem('auth_token', state.token);
-        localStorage.setItem('current_user_id', localUser.user_id);
-        notify('Access Granted', 'success');
-        initApp();
-        return;
-    }
-
-    const data = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: identifier, password })
-    }).then(r => r.json());
-
-    if (data.status === 'ok') {
-        state.token = data.token;
-        localStorage.setItem('auth_token', data.token);
-        notify('Access Granted', 'success');
-        initApp();
-    } else {
-        notify(data.detail || 'Invalid Credentials', 'error');
-    }
-}
-
-async function handleRegister() {
-    const username = document.getElementById('reg-username').value;
-    const email = document.getElementById('reg-email').value;
-    const password = document.getElementById('reg-password').value;
-    
-    if (!username || !email || !password) return notify('All fields are mandatory', 'error');
-    
-    notify('Creating account...', 'success');
-
-    const newUser = LocalDB.addUser({ username, email, password });
-    if (newUser) {
-        state.user = newUser;
-        state.token = `local_${newUser.user_id}`;
-        localStorage.setItem('auth_token', state.token);
-        localStorage.setItem('current_user_id', newUser.user_id);
-        
-        // Background API call
-        fetch(`${API_URL}/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, password })
-        }).catch(e => {});
-
-        notify('Account created!', 'success');
-        initApp();
-    } else {
-        notify('Account already exists locally', 'error');
-    }
-}
-
-function handleLogout() {
-    handleUnauthorized();
-    location.reload();
-}
-
-// --- APP LOGIC ---
-
-async function initApp() {
-    if (!state.token) {
-        handleUnauthorized();
-        return;
-    }
-
-    // Load from LocalDB first
-    const localUserId = localStorage.getItem('current_user_id');
-    if (localUserId) {
-        state.user = LocalDB.get('users').find(u => u.user_id == localUserId);
-    }
-
-    if (!state.user) {
-        const user = await apiCall('/me');
-        if (user) {
-            state.user = user;
-            LocalDB.addUser({ ...user, password: 'api_synced' });
-        }
-    }
-
-    if (state.user) {
-        document.getElementById('screen-auth').style.display = 'none';
-        document.getElementById('main-content').style.display = 'block';
-        updateUserUI();
-        if (state.user.is_admin) document.getElementById('nav-admin').style.display = 'flex';
-        fetchPlans();
-    } else {
-        handleUnauthorized();
-    }
-}
-
-function updateUserUI() {
-    document.getElementById('user-name').innerText = state.user.username;
-    document.getElementById('user-balance').innerText = `$${state.user.balance.toFixed(2)}`;
-    document.getElementById('wallet-balance-display').innerText = `$${state.user.balance.toFixed(2)}`;
-    if (state.user.photo_url) document.getElementById('user-photo').src = state.user.photo_url;
-}
-
 function showView(viewId) {
-    state.currentView = viewId;
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById(`screen-${viewId}`).classList.add('active');
+    const target = document.getElementById(`screen-${viewId}`);
+    if (target) target.classList.add('active');
     
-    document.querySelectorAll('.nav-item').forEach(i => i.classList.toggle('active', i.getAttribute('onclick')?.includes(viewId)));
-    
-    if (viewId === 'admin') fetchAdminStats();
-    if (viewId === 'orders') fetchOrders();
-    
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    const navItem = document.querySelector(`.nav-item[onclick*="${viewId}"]`);
+    if (navItem) navItem.classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// --- DATA FETCHING ---
+function toggleAuth(type) {
+    document.getElementById('form-login').style.display = type === 'register' ? 'none' : 'block';
+    document.getElementById('form-register').style.display = type === 'register' ? 'block' : 'none';
+}
 
-async function fetchPlans() {
-    const plans = await apiCall('/plans');
-    if (plans) {
-        state.plans = plans;
-        renderPlans();
+function updateWalletDisplay() {
+    if (state.user) {
+        const bal = `$${state.user.balance.toFixed(2)}`;
+        document.getElementById('home-balance').innerText = bal;
+        document.getElementById('display-balance').innerText = bal;
+        document.getElementById('home-username').innerText = `@${state.user.username}`;
     }
 }
 
-function renderPlans() {
+// --- RENDER (IMAGE MATCH) ---
+function renderTools() {
     const list = document.getElementById('tools-list');
-    list.innerHTML = state.plans.map(plan => `
-        <div class="tool-card">
+    list.innerHTML = state.tools.map(tool => `
+        <div class="tool-card" onclick="checkAccess('${tool.name}', ${tool.price})">
             <div class="tool-header">
-                <div class="tool-icon">
-                    ${plan.image_url ? `<img src="${plan.image_url}" style="width:100%;height:100%;border-radius:18px;object-fit:cover;">` : '🤖'}
-                </div>
+                <div class="tool-icon">${tool.icon}</div>
                 <div class="tool-title">
-                    <h4>${plan.name}</h4>
-                    <p>${plan.delivery_time || 'Instant Delivery'}</p>
+                    <h4>${tool.name}</h4>
+                    <p>${tool.brand}</p>
                 </div>
             </div>
-            <p class="tool-desc">${plan.description}</p>
+            <p class="tool-desc">${tool.desc}</p>
             <div class="tool-footer">
-                <div class="price-tag">$${plan.price}<span>/ mo</span></div>
-                <button class="buy-btn" onclick="handleBuy('${plan.name}', ${plan.price})">Get Access</button>
+                <div class="price-tag">$${tool.price}</div>
+                <button class="get-access-btn">Get Access</button>
             </div>
         </div>
     `).join('');
 }
 
-async function handleBuy(name, price) {
-    if (state.user.balance < price) {
-        notify('Insufficient Balance! Top up first.', 'error');
-        showView('wallet');
-        return;
-    }
-    
-    if (confirm(`Confirm purchase for ${name} ($${price})?`)) {
-        notify('Processing Purchase...', 'success');
-        // Simple local purchase logic
-        state.user.balance -= price;
-        LocalDB.updateUser(state.user);
-        updateUserUI();
-        notify('Purchase Successful!', 'success');
-    }
+// --- FLOWS ---
+function checkAccess(name, price) {
+    state.selectedPlan = { name, price };
+    document.getElementById('pay-required-amount').innerText = `$${price}`;
+    document.getElementById('deposit-pay-amount').innerText = `$${price}`;
+    document.getElementById('deposit-details').style.display = 'none';
+    showView('deposit');
 }
 
-async function initiateDeposit() {
-    const amount = document.getElementById('deposit-amount').value;
-    if (!amount || amount < 1) return notify('Min deposit is $1', 'error');
-    
-    notify('Generating Crypto Invoice...', 'success');
-    // For local/demo:
+function selectDeposit(network) {
+    state.selectedNetwork = network;
+    document.querySelectorAll('.net-btn').forEach(btn => btn.classList.toggle('selected', btn.innerText === network));
+    const addr = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
+    document.getElementById('deposit-address').innerText = addr;
+    document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${addr}`;
+    document.getElementById('deposit-details').style.display = 'block';
+}
+
+function confirmDeposit() {
+    notify('🔄 Verifying payment...', true);
     setTimeout(() => {
-        state.user.balance = Number(state.user.balance) + Number(amount);
-        LocalDB.updateUser(state.user);
-        updateUserUI();
-        notify(`Success! $${amount} added.`, 'success');
-        showView('wallet');
-    }, 1000);
-}
-
-function fetchOrders() {
-    // Hidden local logic
-}
-
-// --- ADMIN ---
-
-async function fetchAdminStats() {
-    // Priority to local users for visibility
-    const localUsers = LocalDB.get('users');
-    renderAdminUsers(localUsers);
-
-    const data = await apiCall('/admin/stats');
-    if (data) {
-        renderAdminUsers(data.users);
-        renderAdminOrders(data.orders);
-        renderAdminLogs(data.logs);
-    }
-}
-
-function renderAdminUsers(users) {
-    const el = document.getElementById('admin-users-list');
-    el.innerHTML = users.map(u => `
-        <div style="display:flex; justify-content:space-between; padding:15px; border-bottom:1px solid var(--glass-border);">
-            <div><strong>${u.username}</strong><br><span style="font-size:11px; color:var(--text-dim)">${u.email || 'No Email'}</span></div>
-            <div style="font-weight:800; color:var(--primary)">$${u.balance.toFixed(2)}</div>
-        </div>
-    `).join('');
-}
-
-function renderAdminOrders(orders) {
-    const el = document.getElementById('admin-orders-list');
-    el.innerHTML = orders.map(o => `
-        <div style="padding:15px; border-bottom:1px solid var(--glass-border);">
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                <strong>${o.plan_name}</strong>
-                <span style="font-size:10px; background:var(--primary); padding:3px 8px; border-radius:5px;">${o.status}</span>
-            </div>
-            <div style="font-size:11px; color:var(--text-dim)">User: ${o.username} | $${o.total_price}</div>
-        </div>
-    `).join('');
-}
-
-function renderAdminLogs(logs) {
-    const el = document.getElementById('admin-system-logs');
-    el.innerHTML = logs.map(l => `
-        <div style="padding:10px; border-bottom:1px solid var(--glass-border);">
-            <span style="color:var(--primary)">[${new Date(l.timestamp).toLocaleTimeString()}]</span> <strong>${l.action}</strong>: ${l.details}
-        </div>
-    `).join('');
-}
-
-function setAdminTab(tabId) {
-    document.querySelectorAll('.admin-tab').forEach(t => t.classList.toggle('active', t.innerText.toLowerCase().includes(tabId.replace('-',''))));
-    document.querySelectorAll('.admin-sub-view').forEach(v => v.classList.remove('active'));
-    document.getElementById(`admin-${tabId}`).classList.add('active');
-}
-
-async function saveProduct() {
-    const name = document.getElementById('admin-p-name').value;
-    const price = document.getElementById('admin-p-price').value;
-    const description = document.getElementById('admin-p-desc').value;
-    const image_url = document.getElementById('admin-p-img-url').value;
-    
-    if (!name || !price) return notify('Name and Price are mandatory', 'error');
-    
-    const res = await apiCall('/admin/add-plan', 'POST', { name, price, description, image_url });
-    if (res) {
-        notify('Inventory Updated Successfully!', 'success');
-        fetchPlans();
+        state.user.balance += state.selectedPlan.price;
+        updateWalletDisplay();
+        localStorage.setItem('session_user', JSON.stringify(state.user));
+        notify('💰 Deposit Successful!', true);
         showView('home');
+    }, 2000);
+}
+
+// --- AUTH ---
+function handleLogin() {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-password').value;
+    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+    const user = users.find(u => u.email === email && u.password === pass);
+    if (user) {
+        state.user = user;
+        localStorage.setItem('session_user', JSON.stringify(user));
+        showMainApp();
+    } else {
+        notify('Invalid login!');
     }
 }
 
-// Start
-initApp();
+function handleRegister() {
+    const user = document.getElementById('reg-username').value;
+    const email = document.getElementById('reg-email').value;
+    const pass = document.getElementById('reg-password').value;
+    if (!user || !email || !pass) return notify('Fill all fields');
+    
+    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+    users.push({ username: user, email, password: pass, balance: 0 });
+    localStorage.setItem('registered_users', JSON.stringify(users));
+    notify('✨ Registered!', true);
+    toggleAuth('login');
+}
+
+function showMainApp() {
+    document.getElementById('screen-auth').classList.remove('active');
+    document.getElementById('main-content').style.display = 'block';
+    updateWalletDisplay();
+    renderTools();
+}
+
+// Init
+const session = localStorage.getItem('session_user');
+if (session) {
+    state.user = JSON.parse(session);
+    showMainApp();
+}
+renderTools();
 lucide.createIcons();

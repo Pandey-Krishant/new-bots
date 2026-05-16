@@ -29,7 +29,7 @@ async def log_errors(request: Request, call_next):
     try:
         return await call_next(request)
     except Exception as e:
-        print(f"🔥 UNHANDLED ERROR: {traceback.format_exc()}")
+        print(f"UNHANDLED ERROR: {traceback.format_exc()}")
         return JSONResponse(status_code=500, content={"detail": str(e)})
 
 app.add_middleware(

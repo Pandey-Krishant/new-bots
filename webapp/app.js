@@ -17,32 +17,24 @@ const state = {
     orders: []
 };
 
-// --- CUSTOM NOTIFICATIONS ---
-function notify(msg) {
+// --- CUSTOM NOTIFICATIONS (3D Popup) ---
+function notify(msg, isSuccess = false) {
     const el = document.getElementById('notification');
     el.innerText = msg;
+    el.style.borderColor = isSuccess ? '#10b981' : '#a855f7';
+    el.style.boxShadow = isSuccess ? '0 20px 40px -10px rgba(16, 185, 129, 0.4)' : '0 20px 40px -10px rgba(168, 85, 247, 0.4)';
+    
     el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-// Custom Modal Promise
-let modalResolve = null;
-function confirmAction(title, body) {
-    document.getElementById('modal-title').innerText = title;
-    document.getElementById('modal-body').innerText = body;
-    document.getElementById('modal-overlay').classList.add('active');
-    return new Promise(resolve => { modalResolve = resolve; });
-}
-
-function closeModal(result) {
-    document.getElementById('modal-overlay').classList.remove('active');
-    if (modalResolve) modalResolve(result);
+    tg.HapticFeedback.notificationOccurred(isSuccess ? 'success' : 'warning');
+    
+    setTimeout(() => el.classList.remove('show'), 3500);
 }
 
 // --- AUTH LOGIC ---
 function toggleAuth(type) {
     document.getElementById('form-login').style.display = type === 'register' ? 'none' : 'block';
     document.getElementById('form-register').style.display = type === 'register' ? 'block' : 'none';
+    tg.HapticFeedback.impactOccurred('light');
 }
 
 function handleRegister() {
@@ -64,8 +56,9 @@ function handleRegister() {
     users.push({ username, email, password, balance: 0.00 });
     localStorage.setItem('registered_users', JSON.stringify(users));
 
-    notify('Registration successful! Please login.');
-    toggleAuth('login');
+    // Success Popup
+    notify('✨ Registration Successful! Welcome to the future.', true);
+    setTimeout(() => toggleAuth('login'), 1500);
 }
 
 function handleLogin() {
@@ -83,9 +76,10 @@ function handleLogin() {
     if (user) {
         state.user = user;
         localStorage.setItem('session_user', JSON.stringify(user));
-        showMainApp();
+        notify('🚀 Login Successful!', true);
+        setTimeout(showMainApp, 800);
     } else {
-        notify('Invalid credentials!');
+        notify('Invalid credentials! Check your email/pass.');
     }
 }
 
@@ -94,6 +88,7 @@ function handleLogout() {
     state.user = null;
     document.getElementById('main-content').style.display = 'none';
     document.getElementById('screen-auth').classList.add('active');
+    tg.HapticFeedback.impactOccurred('medium');
 }
 
 function showMainApp() {
@@ -121,7 +116,7 @@ function showView(viewId) {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     const activeNav = document.querySelector(`.nav-item[onclick*="${viewId}"]`);
     if (activeNav) activeNav.classList.add('active');
-    if (viewId === 'orders') renderOrders();
+    tg.HapticFeedback.selectionChanged();
 }
 
 function renderTools() {
@@ -135,7 +130,7 @@ function renderTools() {
             <p class="tool-desc">${tool.desc}</p>
             <div class="tool-footer">
                 <div class="price-tag">$${tool.price}</div>
-                <button class="buy-btn" onclick="openCheckout('${tool.name}', ${tool.price})">Get Access</button>
+                <button class="buy-btn" onclick="openCheckout('${tool.name}', ${tool.price})">Buy</button>
             </div>
         </div>
     `).join('');
@@ -157,31 +152,11 @@ function selectNetwork(network) {
     document.getElementById('pay-network').innerText = network;
     document.getElementById('wallet-address').innerText = mockAddresses[network] || 'TQ...WALLET_ADDR';
     document.getElementById('payment-details').style.display = 'block';
+    tg.HapticFeedback.impactOccurred('medium');
 }
 
 function copyAddress() {
-    navigator.clipboard.writeText(document.getElementById('wallet-address').innerText).then(() => notify('Address copied!'));
-}
-
-async function confirmPayment() {
-    const ok = await confirmAction('Payment Confirmation', 'Have you actually sent the crypto? False claims may result in account ban.');
-    if (ok) {
-        state.orders.unshift({ id: Math.floor(Math.random()*10000), item: state.selectedPlan.name, status: 'Pending', price: state.selectedPlan.price });
-        showView('orders');
-        notify('Order placed! Verification pending.');
-    }
-}
-
-function renderOrders() {
-    const list = document.getElementById('orders-list');
-    list.innerHTML = state.orders.length ? state.orders.map(o => `
-        <div class="tool-card" style="margin-bottom: 12px; padding: 15px;">
-            <div style="display: flex; justify-content: space-between;">
-                <div><h4>Order #${o.id}</h4><p>${o.item}</p></div>
-                <div style="text-align: right;"><p>$${o.price}</p><span>${o.status}</span></div>
-            </div>
-        </div>
-    `).join('') : '<div class="empty-state">No orders yet.</div>';
+    navigator.clipboard.writeText(document.getElementById('wallet-address').innerText).then(() => notify('📋 Address copied!', true));
 }
 
 init();

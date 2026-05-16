@@ -4,14 +4,7 @@ if (tg) {
     tg.ready();
 }
 
-// AUTO-DETECT API URL
-// - Local dev: talk to local FastAPI directly
-// - Deployed (Vercel): talk to the serverless function under `/api`
-let API_URL = 'http://localhost:8000';
-if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    API_URL = `${window.location.origin}/api`;
-}
-
+const API_URL = 'http://localhost:8000';
 const state = {
     user: null,
     plans: [],
@@ -73,7 +66,7 @@ async function apiCall(endpoint, method = 'GET', body = null) {
         }
         return await response.json();
     } catch (e) {
-        console.warn('API sync unavailable');
+        console.warn('API Sync issue');
         return null;
     }
 }
@@ -103,7 +96,7 @@ async function handleLogin() {
     
     notify('Authenticating...', 'success');
     
-    // Local check for reliability
+    // Local check first
     const localUser = LocalDB.getUser(identifier);
     if (localUser && localUser.password === password) {
         state.user = localUser;
@@ -115,12 +108,12 @@ async function handleLogin() {
         return;
     }
 
-    const res = await fetch(`${API_URL}/login`, {
+    const data = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: identifier, password })
-    });
-    const data = await res.json();
+    }).then(r => r.json());
+
     if (data.status === 'ok') {
         state.token = data.token;
         localStorage.setItem('auth_token', data.token);
@@ -157,7 +150,7 @@ async function handleRegister() {
         notify('Account created!', 'success');
         initApp();
     } else {
-        notify('Account exists locally or error', 'error');
+        notify('Account already exists locally', 'error');
     }
 }
 
@@ -174,7 +167,7 @@ async function initApp() {
         return;
     }
 
-    // Try Local
+    // Load from LocalDB first
     const localUserId = localStorage.getItem('current_user_id');
     if (localUserId) {
         state.user = LocalDB.get('users').find(u => u.user_id == localUserId);
@@ -260,7 +253,7 @@ async function handleBuy(name, price) {
     
     if (confirm(`Confirm purchase for ${name} ($${price})?`)) {
         notify('Processing Purchase...', 'success');
-        // Logic for purchase
+        // Simple local purchase logic
         state.user.balance -= price;
         LocalDB.updateUser(state.user);
         updateUserUI();
@@ -272,8 +265,8 @@ async function initiateDeposit() {
     const amount = document.getElementById('deposit-amount').value;
     if (!amount || amount < 1) return notify('Min deposit is $1', 'error');
     
-    notify('Processing...', 'success');
-    // For demo/local:
+    notify('Generating Crypto Invoice...', 'success');
+    // For local/demo:
     setTimeout(() => {
         state.user.balance = Number(state.user.balance) + Number(amount);
         LocalDB.updateUser(state.user);
@@ -284,19 +277,18 @@ async function initiateDeposit() {
 }
 
 function fetchOrders() {
-    // Re-use original empty logic or simple list
+    // Hidden local logic
 }
 
 // --- ADMIN ---
 
 async function fetchAdminStats() {
-    // Prioritize Local for User visibility
+    // Priority to local users for visibility
     const localUsers = LocalDB.get('users');
     renderAdminUsers(localUsers);
 
     const data = await apiCall('/admin/stats');
     if (data) {
-        // If API works, use API data but merge with local if needed
         renderAdminUsers(data.users);
         renderAdminOrders(data.orders);
         renderAdminLogs(data.logs);

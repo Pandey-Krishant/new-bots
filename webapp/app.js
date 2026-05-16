@@ -39,7 +39,64 @@ function showView(viewId) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// --- AUTH ---
+function updateWalletDisplay() {
+    if (state.user) {
+        const bal = `$${state.user.balance.toFixed(2)}`;
+        document.getElementById('display-balance').innerText = bal;
+        document.getElementById('home-balance').innerText = bal;
+        document.getElementById('home-username').innerText = `@${state.user.username}`;
+    }
+}
+
+// --- PAYMENT & QR LOGIC ---
+function selectDeposit(network) {
+    state.selectedNetwork = network;
+    document.querySelectorAll('.net-btn').forEach(btn => btn.classList.toggle('selected', btn.innerText === network));
+    
+    const mockTxID = 'NP_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    const address = getNetworkAddress(network);
+    
+    state.currentTransaction = {
+        id: mockTxID,
+        network: network,
+        address: address,
+        amount: state.selectedPlan.price || 20.00
+    };
+
+    // Update UI
+    document.getElementById('display-txid').innerText = state.currentTransaction.id;
+    document.getElementById('deposit-address').innerText = address;
+    document.getElementById('deposit-pay-amount').innerText = `$${state.currentTransaction.amount}`;
+    
+    // Generate QR Code via API
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${address}`;
+    document.getElementById('qr-image').src = qrUrl;
+    
+    document.getElementById('deposit-details').style.display = 'block';
+    tg.HapticFeedback.impactOccurred('medium');
+}
+
+function getNetworkAddress(network) {
+    const addrs = { 
+        'USDT (TRC-20)': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+        'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-',
+        'Bitcoin (BTC)': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'
+    };
+    return addrs[network] || '0x9999999999999999999999999999999999999999';
+}
+
+function confirmDeposit() {
+    notify('🔄 Verifying transaction...', true);
+    setTimeout(() => {
+        state.user.balance += state.currentTransaction.amount;
+        updateWalletDisplay();
+        localStorage.setItem('session_user', JSON.stringify(state.user));
+        notify('💰 Payment confirmed! Wallet updated.', true);
+        showView('home');
+    }, 3000);
+}
+
+// --- REST OF LOGIC ---
 function handleLogin() {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value.trim();
@@ -61,62 +118,6 @@ function showMainApp() {
     showView('home');
 }
 
-function updateWalletDisplay() {
-    if (state.user) {
-        document.getElementById('display-balance').innerText = `$${state.user.balance.toFixed(2)}`;
-    }
-}
-
-// --- NOWPAYMENTS INTEGRATION ---
-async function selectDeposit(network) {
-    state.selectedNetwork = network;
-    document.querySelectorAll('.net-btn').forEach(btn => btn.classList.toggle('selected', btn.innerText === network));
-    
-    notify('🔄 Generating Transaction ID...');
-    
-    // In a real production app, you would fetch this from your bot/api.py
-    // Example: const response = await fetch('/create-payment', { method: 'POST', body: ... })
-    // For now, we simulate the NOWPayments response to show the UX
-    
-    const mockTxID = 'NP_' + Math.random().toString(36).substr(2, 9).toUpperCase();
-    state.currentTransaction = {
-        id: mockTxID,
-        network: network,
-        address: getNetworkAddress(network),
-        amount: state.selectedPlan.price || 19.99
-    };
-
-    document.getElementById('display-txid').innerText = state.currentTransaction.id;
-    document.getElementById('deposit-address').innerText = state.currentTransaction.address;
-    document.getElementById('deposit-pay-amount').innerText = `$${state.currentTransaction.amount}`;
-    document.getElementById('deposit-details').style.display = 'block';
-    
-    tg.HapticFeedback.impactOccurred('heavy');
-}
-
-function getNetworkAddress(network) {
-    const addrs = { 
-        'USDT (TRC-20)': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
-        'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-',
-        'Bitcoin (BTC)': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'
-    };
-    return addrs[network] || '0x9999999999999999999999999999999999999999';
-}
-
-function confirmDeposit() {
-    notify('🚀 Transaction submitted! ID: ' + state.currentTransaction.id, true);
-    
-    // Simulate auto-verification
-    setTimeout(() => {
-        state.user.balance += state.currentTransaction.amount;
-        updateWalletDisplay();
-        localStorage.setItem('session_user', JSON.stringify(state.user));
-        notify('💰 Balance updated! Transaction Verified.', true);
-        showView('home');
-    }, 4000);
-}
-
-// --- UTILS ---
 function checkAccess(name, price) {
     state.selectedPlan = { name, price };
     if (state.user && state.user.balance >= price) {
@@ -130,12 +131,20 @@ function checkAccess(name, price) {
     }
 }
 
+function openGenericDeposit() {
+    state.selectedPlan = { name: 'Wallet Deposit', price: 0 };
+    document.getElementById('pay-for-item').innerText = 'Wallet Deposit';
+    document.getElementById('pay-required-amount').innerText = 'Any Amount';
+    document.getElementById('deposit-details').style.display = 'none';
+    showView('deposit');
+}
+
 function processOrder() {
     state.user.balance -= state.selectedPlan.price;
     updateWalletDisplay();
     localStorage.setItem('session_user', JSON.stringify(state.user));
     state.orders.unshift({ id: Math.floor(Math.random()*10000), item: state.selectedPlan.name, price: state.selectedPlan.price, status: 'Delivered', date: new Date().toLocaleDateString() });
-    notify('🛒 Order Delivered!', true);
+    notify('🛒 Order Success!', true);
     setTimeout(() => { showView('orders'); renderOrders(); }, 1000);
 }
 
@@ -186,7 +195,6 @@ function handleRegister() {
     toggleAuth('login');
 }
 
-// Init
 const session = localStorage.getItem('session_user');
 if (session) {
     state.user = JSON.parse(session);

@@ -49,8 +49,17 @@
                 <!-- HOME VIEW -->
                 <div id="screen-home" class="view active">
                     <header class="hero">
+                        <div class="top-nav" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+                            <div class="user-info">
+                                <span style="font-weight: 800; font-size: 18px;" id="home-username">@User</span>
+                            </div>
+                            <div class="balance-badge" style="background: rgba(139, 92, 246, 0.2); border: 1px solid var(--primary); padding: 8px 16px; border-radius: 100px; display: flex; align-items: center; gap: 8px;">
+                                <i data-lucide="wallet" style="width: 16px; color: var(--primary);"></i>
+                                <span id="home-balance" style="font-weight: 800; font-size: 14px; color: white;">$0.00</span>
+                            </div>
+                        </div>
                         <h1>Premium AI Store</h1>
-                        <p>Get instant access to AI tools at unbeatable prices.</p>
+                        <p>Instant access to powerful AI tools.</p>
                     </header>
                     <div class="featured-card" onclick="checkAccess('ChatGPT Plus (Private)', 19.99)">
                         <div class="featured-icon">🚀</div>
@@ -86,38 +95,46 @@
                         <h2>Secure Payment</h2>
                     </div>
                     <div class="tool-card" style="margin-bottom: 24px; border: 1px solid var(--primary); padding: 20px;">
-                        <p style="font-size: 13px; color: var(--text-dim);">Payment for:</p>
+                        <p style="font-size: 12px; color: var(--text-dim);">Paying for:</p>
                         <h3 id="pay-for-item">Wallet Deposit</h3>
-                        <div style="font-size: 20px; font-weight: 800; color: var(--primary); margin-top: 5px;">Required: <span id="pay-required-amount">$0.00</span></div>
+                        <div style="font-size: 18px; font-weight: 800; color: var(--primary);">Amount: <span id="pay-required-amount">$0.00</span></div>
                     </div>
                     
-                    <p style="color: var(--text-dim); margin-bottom: 15px; font-size: 14px;">Choose crypto network:</p>
+                    <p style="color: var(--text-dim); margin-bottom: 15px; font-size: 14px;">Select payment method:</p>
                     <div class="network-grid">
                         <div class="net-btn" onclick="selectDeposit('USDT (TRC-20)')">USDT (TRC-20)</div>
-                        <div class="net-btn" onclick="selectDeposit('USDT (BEP-20)')">USDT (BEP-20)</div>
                         <div class="net-btn" onclick="selectDeposit('TON Coin')">TON Coin</div>
                         <div class="net-btn" onclick="selectDeposit('Bitcoin (BTC)')">Bitcoin (BTC)</div>
                     </div>
 
-                    <div id="deposit-details" style="display: none; margin-top: 30px;">
-                        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 15px; border-radius: 14px; margin-bottom: 20px; text-align: left;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                <span style="font-size: 12px; color: var(--text-dim);">Transaction ID:</span>
-                                <span id="display-txid" style="font-family: monospace; font-weight: 700; color: var(--primary);">Generating...</span>
+                    <div id="deposit-details" style="display: none; margin-top: 24px; text-align: center;">
+                        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 20px; border-radius: 20px;">
+                            <!-- QR CODE -->
+                            <div id="qr-container" style="background: white; padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 20px;">
+                                <img id="qr-image" src="" alt="Payment QR" style="width: 150px; height: 150px; display: block;">
                             </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="font-size: 12px; color: var(--text-dim);">Status:</span>
-                                <span style="font-size: 12px; font-weight: 700; color: #f59e0b;">Awaiting Payment</span>
+
+                            <div style="text-align: left; margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                    <span style="font-size: 12px; color: var(--text-dim);">Transaction ID:</span>
+                                    <span id="display-txid" style="font-family: monospace; font-weight: 700; color: var(--primary);">Generating...</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="font-size: 12px; color: var(--text-dim);">Status:</span>
+                                    <span style="font-size: 12px; font-weight: 700; color: #f59e0b;">Awaiting Payment</span>
+                                </div>
+                            </div>
+
+                            <div class="alert" style="background: rgba(139, 92, 246, 0.1); border: 1px solid var(--primary); padding: 12px; border-radius: 12px; font-size: 13px; margin-bottom: 15px;">
+                                Send <span id="deposit-pay-amount" style="font-weight: 800;"></span> to:
+                            </div>
+                            
+                            <div class="address-box" onclick="copyAddress()" style="background: #000; border: 1px dashed #333; cursor: pointer;">
+                                <code id="deposit-address" style="font-size: 11px;"></code>
+                                <i data-lucide="copy" style="width: 16px;"></i>
                             </div>
                         </div>
-                        <div class="alert" style="background: rgba(139, 92, 246, 0.1); border-color: var(--primary); color: white;">
-                            Send exactly <span id="deposit-pay-amount" style="font-weight: 800;"></span> to:
-                        </div>
-                        <div class="address-box" onclick="copyAddress()">
-                            <code id="deposit-address"></code>
-                            <i data-lucide="copy" style="width: 18px;"></i>
-                        </div>
-                        <p style="text-align: center; font-size: 12px; margin-top: 12px; color: var(--text-dim);">Balance will be added automatically after 1 confirmation.</p>
+
                         <button class="primary-btn" style="margin-top: 30px;" onclick="confirmDeposit()">✅ I Have Sent Payment</button>
                     </div>
                 </div>
@@ -132,9 +149,9 @@
                 <div id="screen-wallet" class="view">
                     <div class="view-header"><h2>💳 My Wallet</h2></div>
                     <div class="wallet-card" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); padding: 40px; border-radius: 24px; text-align: center;">
-                        <p style="color: rgba(255,255,255,0.8);">Balance</p>
+                        <p style="color: rgba(255,255,255,0.8);">Available Balance</p>
                         <h3 id="display-balance" style="font-size: 48px; font-weight: 900;">$0.00</h3>
-                        <button onclick="openGenericDeposit()" style="margin-top: 20px; background: rgba(255,255,255,0.2); border: none; padding: 10px 20px; border-radius: 10px; color: white; font-weight: 700;">+ Deposit Funds</button>
+                        <button onclick="openGenericDeposit()" style="margin-top: 20px; background: rgba(255,255,255,0.2); border: none; padding: 10px 20px; border-radius: 10px; color: white; font-weight: 700;">+ Deposit</button>
                     </div>
                 </div>
 

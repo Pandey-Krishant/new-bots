@@ -153,8 +153,49 @@ function handleRegister() {
 function showMainApp() {
     document.getElementById('screen-auth').classList.remove('active');
     document.getElementById('main-content').style.display = 'block';
+    
+    // ADMIN CHECK
+    if (state.user && state.user.email === 'admin@ai.com') {
+        document.getElementById('nav-admin').style.display = 'flex';
+    }
+    
     updateWalletDisplay();
     renderTools();
+}
+
+async function handleAdminAdd() {
+    const name = document.getElementById('admin-p-name').value;
+    const price = document.getElementById('admin-p-price').value;
+    const desc = document.getElementById('admin-p-desc').value;
+    const image = document.getElementById('admin-p-image').value;
+
+    if (!name || !price) return notify('Name and Price required');
+
+    notify('⌛ Listing product...', true);
+    try {
+        const response = await fetch('http://localhost:8000/add-plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, price, description: desc, image_url: image })
+        });
+        const data = await response.json();
+        if (data.status === 'ok') {
+            notify('✅ Product added successfully!', true);
+            showView('home');
+            fetchPlans(); // Refresh list
+        }
+    } catch (e) { notify('API Error'); }
+}
+
+async function fetchPlans() {
+    try {
+        const r = await fetch('http://localhost:8000/plans');
+        const data = await r.json();
+        if (data.length > 0) {
+            state.tools = data;
+            renderTools();
+        }
+    } catch (e) { console.log("Using default tools"); }
 }
 
 // Init
@@ -163,5 +204,5 @@ if (session) {
     state.user = JSON.parse(session);
     showMainApp();
 }
-renderTools();
+fetchPlans(); // Fetch from dynamic API
 lucide.createIcons();

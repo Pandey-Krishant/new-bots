@@ -30,6 +30,17 @@ async def get_plans():
         p["_id"] = str(p["_id"])
     return plans
 
+@app.post("/add-plan")
+async def add_plan(data: dict):
+    await db.add_plan(
+        name=data.get('name'),
+        price=data.get('price'),
+        description=data.get('description'),
+        image_url=data.get('image_url')
+    )
+    send_admin_alert(f"🚀 <b>New Product Added via Frontend!</b>\nName: {data.get('name')}\nPrice: ${data.get('price')}")
+    return {"status": "ok"}
+
 @app.post("/create-invoice")
 async def create_invoice(data: dict):
     """Generate a real NOWPayments checkout URL."""

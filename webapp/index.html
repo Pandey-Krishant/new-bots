@@ -124,12 +124,35 @@
                 </div>
             </div>
 
+                <!-- ADMIN VIEW (NEW) -->
+                <div id="screen-admin" class="view">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px;">
+                        <button onclick="showView('home')" style="background: #111; border: 1px solid #333; color: white; width: 48px; height: 48px; border-radius: 14px;"><i data-lucide="chevron-left"></i></button>
+                        <h2 style="font-size: 24px;">Admin Dashboard</h2>
+                    </div>
+                    
+                    <div class="tool-card" style="padding: 30px;">
+                        <h3 style="margin-bottom: 20px;">Add New Product</h3>
+                        <input type="text" id="admin-p-name" class="auth-input" placeholder="Product Name">
+                        <input type="number" id="admin-p-price" class="auth-input" placeholder="Price ($)">
+                        <textarea id="admin-p-desc" class="auth-input" placeholder="Description" style="height: 100px; padding-top: 15px;"></textarea>
+                        <input type="text" id="admin-p-image" class="auth-input" placeholder="Image URL (Direct link)">
+                        <button class="get-access-btn" style="width: 100%; margin-top: 10px;" onclick="handleAdminAdd()">🚀 List Product Now</button>
+                    </div>
+
+                    <div style="margin-top: 40px;">
+                        <h3 style="margin-bottom: 20px;">Active Products</h3>
+                        <div id="admin-tools-list"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Bottom Nav -->
             <nav class="nav-bar">
                 <a href="#" class="nav-item active" onclick="showView('home')"><i data-lucide="home"></i><span>Home</span></a>
                 <a href="#" class="nav-item" onclick="showView('wallet')"><i data-lucide="wallet"></i><span>Wallet</span></a>
                 <a href="#" class="nav-item" onclick="showView('orders')"><i data-lucide="clock"></i><span>Orders</span></a>
-                <a href="#" class="nav-item" onclick="showView('support')"><i data-lucide="shield-check"></i><span>Support</span></a>
+                <a href="#" id="nav-admin" class="nav-item" style="display: none;" onclick="showView('admin')"><i data-lucide="settings"></i><span>Admin</span></a>
             </nav>
         </div>
     </div>

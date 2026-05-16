@@ -1,8 +1,10 @@
 {
   "version": 2,
-  "public": true,
   "name": "ai-subscription-mini-app",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/webapp/$1" }
+  "builds": [
+    { "src": "webapp/**", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "/webapp/$1" }
   ]
 }

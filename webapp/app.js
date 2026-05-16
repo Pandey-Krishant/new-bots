@@ -4,51 +4,41 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 tg.ready();
 
-// Color scheme handling
+// Sync Theme with Telegram
 document.documentElement.style.setProperty('--primary', tg.themeParams.button_color || '#8b5cf6');
-document.documentElement.style.setProperty('--bg-dark', tg.themeParams.bg_color || '#0f172a');
+document.documentElement.style.setProperty('--bg-dark', tg.themeParams.bg_color || '#020617');
 document.documentElement.style.setProperty('--text-main', tg.themeParams.text_color || '#f8fafc');
-document.documentElement.style.setProperty('--bg-card', tg.themeParams.secondary_bg_color || 'rgba(30, 41, 59, 0.7)');
 
-// Main Button handling
-function setupMainButton(planName, price) {
-    tg.MainButton.text = `Buy ${planName} - $${price}`;
+// Global Buy Function
+window.setupMainButton = function(planName, price) {
+    tg.HapticFeedback.impactOccurred('medium');
+    
+    tg.MainButton.text = `PROCEED TO PAY $${price}`;
     tg.MainButton.show();
+    
+    // Smooth scroll to top when button shows
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
     tg.MainButton.onClick(() => {
         tg.sendData(JSON.stringify({
             action: 'buy',
             item: planName,
-            price: price
+            price: price,
+            timestamp: new Date().toISOString()
         }));
+        tg.close(); // Close webapp after sending data
     });
-}
+};
 
-// Navigation handling
+// Navigation Interactivity
 document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', (e) => {
         e.preventDefault();
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
         item.classList.add('active');
-        
-        // Haptic feedback
-        tg.HapticFeedback.impactOccurred('light');
+        tg.HapticFeedback.selectionChanged();
     });
 });
 
-// Example function to show plans
-function showPlans(category) {
-    console.log(`Showing plans for ${category}`);
-    tg.HapticFeedback.selectionChanged();
-    
-    // In a real app, you would filter the list or navigate to a new view
-    tg.showAlert(`Coming soon: ${category.toUpperCase()} plans are being updated!`);
-}
-
-// Handle Buy Button clicks in the UI
-document.querySelectorAll('.buy-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        setupMainButton('ChatGPT Plus', 19.99);
-    });
-});
-
-console.log('WebApp Initialized for user:', tg.initDataUnsafe.user?.username);
+// Log for Debugging
+console.log('Premium WebApp V2 Loaded');

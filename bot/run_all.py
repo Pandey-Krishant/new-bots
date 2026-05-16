@@ -10,12 +10,18 @@ def run_bots():
     bot_dir = os.path.dirname(os.path.abspath(__file__))
     
     # Start User Bot
+    print("⏳ Starting User Bot...")
     user_bot = subprocess.Popen([sys.executable, os.path.join(bot_dir, "bot.py")])
-    print("✅ User Bot started.")
     
     # Start Admin Bot
+    print("⏳ Starting Admin Bot...")
     admin_bot = subprocess.Popen([sys.executable, os.path.join(bot_dir, "admin_bot.py")])
-    print("✅ Admin Bot started.")
+    
+    print("\n🚀 BOTH BOTS ARE NOW RUNNING!")
+    print("---------------------------------------")
+    print("🤖 User Bot: Handle Store & Customers")
+    print("🛠 Admin Bot: Handle Logs & Management")
+    print("---------------------------------------\n")
     
     try:
         while True:

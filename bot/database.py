@@ -85,12 +85,23 @@ class Database:
     async def get_user_orders(self, user_id):
         return await self.orders.find({"user_id": user_id}).sort("timestamp", -1).to_list(length=50)
 
-    # Wallet Methods
-    async def get_wallet_address(self, network):
-        wallet = await self.wallets.find_one({"network": network})
-        return wallet["address"] if wallet else None
+    # Admin Methods
+    async def get_all_users(self):
+        return await self.users.find().sort("joined_at", -1).to_list(length=100)
 
-    async def get_all_wallets(self):
-        return await self.wallets.find().to_list(length=50)
+    async def get_all_orders(self):
+        return await self.orders.find().sort("timestamp", -1).to_list(length=100)
+
+    async def add_log(self, user_id, action, details=""):
+        log = {
+            "user_id": user_id,
+            "action": action,
+            "details": details,
+            "timestamp": datetime.utcnow()
+        }
+        await self.db.logs.insert_one(log)
+
+    async def get_logs(self):
+        return await self.db.logs.find().sort("timestamp", -1).to_list(length=100)
 
 db = Database()

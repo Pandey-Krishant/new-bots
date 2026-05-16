@@ -31,6 +31,30 @@ async def init_db():
             "delivery_time": "Within 24 hours",
             "description": "Unlock Claude 3.5 Sonnet and Opus with higher limits and early access to new features.",
             "is_active": True
+        },
+        {
+            "name": "Gemini Ultra",
+            "duration": "1 Month",
+            "price": 19.99,
+            "delivery_time": "Within 24 hours",
+            "description": "Google's most capable AI model for highly complex tasks. ✦ Advanced reasoning ✦ Multimodal capabilities.",
+            "is_active": True
+        },
+        {
+            "name": "Perplexity Pro",
+            "duration": "1 Month",
+            "price": 20.00,
+            "delivery_time": "Within 12 hours",
+            "description": "Pro Search, file uploads, and choice of AI models (Claude/GPT). ✦ Accurate answers ✦ Citations included.",
+            "is_active": True
+        },
+        {
+            "name": "Canva Pro",
+            "duration": "1 Month",
+            "price": 12.99,
+            "delivery_time": "Instant Delivery",
+            "description": "Unlimited premium content, Magic Studio, and brand tools. ✦ Design anything ✦ Collaborative tools.",
+            "is_active": True
         }
     ]
     

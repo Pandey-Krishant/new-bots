@@ -43,15 +43,25 @@ async def get_current_user(request: Request):
     if tg_user:
         user = await db.get_user(tg_user['id'])
         if not user:
-            await db.register_user(tg_user['id'], tg_user.get('username', 'User'))
-            user = await db.get_user(tg_user['id'])
+            # Check if a user with this username already exists (from manual registration)
+            existing = await db.get_user_by_email_or_username(tg_user.get('username'))
+            if existing and not existing.get('user_id'):
+                # Link them!
+                await db.users.update_one({"_id": existing["_id"]}, {"$set": {"user_id": tg_user['id']}})
+                user = await db.get_user(tg_user['id'])
+            else:
+                # Create new
+                await db.register_user(tg_user['id'], tg_user.get('username', 'User'))
+                user = await db.get_user(tg_user['id'])
         return user
     
-    # 2. Try Email/Password Token (We'll use user_id as token for simplicity)
+    # 2. Try Manual Token
     if auth.startswith("USER_"):
-        user_id = int(auth.split("_")[1])
-        user = await db.get_user(user_id)
-        if user: return user
+        try:
+            user_id = int(auth.split("_")[1])
+            user = await db.get_user(user_id)
+            if user: return user
+        except: pass
         
     raise HTTPException(status_code=401, detail="Invalid Session")
 
@@ -66,24 +76,24 @@ async def register(data: dict):
     password = data.get("password")
     username = data.get("username")
     
-    if not email or not password: raise HTTPException(status_code=400, detail="Missing fields")
+    if not username or not password: raise HTTPException(status_code=400, detail="Username and Password required")
     
-    existing = await db.get_user_by_email(email)
-    if existing: raise HTTPException(status_code=400, detail="Email already registered")
+    existing = await db.get_user_by_email_or_username(username)
+    if existing: raise HTTPException(status_code=400, detail="Username or Email already exists")
     
-    # Generate a random numeric ID for non-telegram users
-    user_id = int(time.time()) % 1000000000
+    # Random ID for manual registration
+    user_id = int(time.time() * 1000) % 1000000000
     await db.register_user(user_id, username, email, password)
     return {"status": "ok", "user_id": user_id}
 
 @app.post("/login")
 async def login(data: dict):
-    email = data.get("email")
+    identifier = data.get("email") # This could be email or username
     password = data.get("password")
     
-    user = await db.get_user_by_email(email)
+    user = await db.get_user_by_email_or_username(identifier)
     if not user or user.get("password") != password:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     
     return {"status": "ok", "token": f"USER_{user['user_id']}", "user_id": user["user_id"]}
 
@@ -100,28 +110,15 @@ async def get_plans():
     for p in plans: p["_id"] = str(p["_id"])
     return plans
 
-@app.get("/admin/stats")
-async def get_admin_stats(request: Request):
-    user = await get_current_user(request)
-    if not is_admin(user["user_id"]): raise HTTPException(status_code=403)
-    
-    users = await db.get_all_users()
-    orders = await db.get_all_orders()
-    logs = await db.get_logs()
-    
-    for u in users: u["_id"] = str(u["_id"])
-    for o in orders: o["_id"] = str(o["_id"])
-    for l in logs: l["_id"] = str(l["_id"])
-    
-    return {"users": users, "orders": orders, "logs": logs}
-
-# --- OTHER ENDPOINTS REMAIN SAME (OMITTED FOR BREVITY BUT KEPT IN FILE) ---
 @app.post("/create-payment")
 async def create_payment(request: Request):
     user = await get_current_user(request)
     data = await request.json()
+    amount = data.get("amount")
+    if not amount: raise HTTPException(status_code=400)
+    
     r = requests.post("https://api.nowpayments.io/v1/payment", json={
-        "price_amount": float(data.get("amount")),
+        "price_amount": float(amount),
         "price_currency": "usd",
         "pay_currency": "usdttrc20",
         "order_id": f"DEP_{user['user_id']}_{int(time.time())}"
@@ -134,6 +131,18 @@ async def get_orders(request: Request):
     orders = await db.get_user_orders(user["user_id"])
     for o in orders: o["_id"] = str(o["_id"])
     return orders
+
+@app.get("/admin/stats")
+async def get_admin_stats(request: Request):
+    user = await get_current_user(request)
+    if not is_admin(user["user_id"]): raise HTTPException(status_code=403)
+    users = await db.get_all_users()
+    orders = await db.get_all_orders()
+    logs = await db.get_logs()
+    for u in users: u["_id"] = str(u["_id"])
+    for o in orders: o["_id"] = str(o["_id"])
+    for l in logs: l["_id"] = str(l["_id"])
+    return {"users": users, "orders": orders, "logs": logs}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

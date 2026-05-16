@@ -14,6 +14,10 @@ DB_NAME = os.getenv("DB_NAME", "ai_subscription_bot")
 # Admin IDs (List of integers)
 ADMIN_IDS = [int(id) for id in os.getenv("ADMIN_IDS", "0").split(",") if id.isdigit()]
 
+# NOWPayments Credentials
+NOWPAYMENTS_API_KEY = os.getenv("NOWPAYMENTS_API_KEY", "Z2CZBVX-CZH4SJ1-K6CB517-4FFJ8PG")
+NOWPAYMENTS_IPN_SECRET = os.getenv("NOWPAYMENTS_IPN_SECRET", "OUd42EvuYBD/uCr2RC/6kS8+ZE2uzJ/m")
+
 # WebApp Settings
 WEBAPP_URL = os.getenv("WEBAPP_URL", "https://new-bots.vercel.app/")
 

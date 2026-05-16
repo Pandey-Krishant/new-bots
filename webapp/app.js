@@ -32,49 +32,61 @@ function toggleAuth(type) {
 }
 
 function handleRegister() {
-    const username = document.getElementById('reg-username').value;
-    const email = document.getElementById('reg-email').value;
-    const password = document.getElementById('reg-password').value;
+    console.log("Attempting Registration...");
+    const username = document.getElementById('reg-username').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value.trim();
 
     if (!username || !email || !password) {
         tg.showAlert('All fields are required!');
         return;
     }
 
-    // Save user to "database" (localStorage)
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    if (users.find(u => u.email === email)) {
-        tg.showAlert('User with this email already exists!');
-        return;
+    try {
+        const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+        if (users.find(u => u.email === email)) {
+            tg.showAlert('User with this email already exists!');
+            return;
+        }
+
+        const newUser = { username, email, password, balance: 0.00 };
+        users.push(newUser);
+        localStorage.setItem('registered_users', JSON.stringify(users));
+
+        console.log("Registration Successful for:", email);
+        tg.HapticFeedback.notificationOccurred('success');
+        tg.showAlert('Registration successful! Please login.');
+        toggleAuth('login');
+    } catch (e) {
+        console.error("Registration Error:", e);
+        tg.showAlert('Error during registration. Please try again.');
     }
-
-    const newUser = { username, email, password, balance: 0.00, orders: [] };
-    users.push(newUser);
-    localStorage.setItem('registered_users', JSON.stringify(users));
-
-    tg.showAlert('Registration successful! Please login.');
-    toggleAuth('login');
 }
 
 function handleLogin() {
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
+    console.log("Attempting Login...");
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value.trim();
 
     if (!email || !password) {
         tg.showAlert('Please fill in all fields');
         return;
     }
 
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    const user = users.find(u => u.email === email && u.password === password);
+    try {
+        const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+        const user = users.find(u => u.email === email && u.password === password);
 
-    if (user) {
-        state.user = user;
-        localStorage.setItem('session_user', JSON.stringify(user));
-        tg.HapticFeedback.notificationOccurred('success');
-        showMainApp();
-    } else {
-        tg.showAlert('Invalid email or password!');
+        if (user) {
+            state.user = user;
+            localStorage.setItem('session_user', JSON.stringify(user));
+            tg.HapticFeedback.notificationOccurred('success');
+            showMainApp();
+        } else {
+            tg.showAlert('Invalid email or password!');
+        }
+    } catch (e) {
+        console.error("Login Error:", e);
     }
 }
 
@@ -98,8 +110,12 @@ function showMainApp() {
 function init() {
     const session = localStorage.getItem('session_user');
     if (session) {
-        state.user = JSON.parse(session);
-        showMainApp();
+        try {
+            state.user = JSON.parse(session);
+            showMainApp();
+        } catch (e) {
+            localStorage.removeItem('session_user');
+        }
     }
     renderTools();
     lucide.createIcons();
@@ -121,6 +137,7 @@ function showView(viewId) {
 
 function renderTools() {
     const list = document.getElementById('tools-list');
+    if (!list) return;
     list.innerHTML = state.tools.map(tool => `
         <div class="tool-card">
             <div class="tool-header">
@@ -136,7 +153,7 @@ function renderTools() {
     `).join('');
 }
 
-// --- CHECKOUT ---
+// --- CHECKOUT & PAYMENTS ---
 function openCheckout(name, price) {
     state.selectedPlan = { name, price };
     document.getElementById('checkout-item-name').innerText = name;
@@ -151,6 +168,9 @@ function selectNetwork(network) {
     tg.HapticFeedback.impactOccurred('light');
     document.querySelectorAll('.net-btn').forEach(btn => btn.classList.toggle('selected', btn.innerText === network));
 
+    // In a real app with NOWPayments, you would call your API here to generate a payment address
+    // Example: fetch('/api/create-payment', { method: 'POST', body: JSON.stringify({ network, amount: state.selectedPlan.price }) })
+    
     const mockAddresses = {
         'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-',
         'Bitcoin (BTC)': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
@@ -184,11 +204,12 @@ function confirmPayment() {
 
 function renderOrders() {
     const list = document.getElementById('orders-list');
+    if (!list) return;
     list.innerHTML = state.orders.length ? state.orders.map(o => `
         <div class="tool-card" style="margin-bottom: 12px; padding: 15px;">
             <div style="display: flex; justify-content: space-between;">
                 <div><h4>Order #${o.id}</h4><p>${o.item}</p></div>
-                <div style="text-align: right;"><p>$${o.price}</p><span>${o.status}</span></div>
+                <div style="text-align: right;"><p>$${o.price}</p><span style="color: var(--warning);">${o.status}</span></div>
             </div>
         </div>
     `).join('') : '<div class="empty-state">No orders yet.</div>';

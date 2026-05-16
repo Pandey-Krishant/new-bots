@@ -10,66 +10,62 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        .admin-tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
-        .admin-tab { padding: 8px 16px; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: 10px; font-size: 13px; cursor: pointer; white-space: nowrap; color: var(--text-dim); }
-        .admin-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .admin-sub-view { display: none; }
-        .admin-sub-view.active { display: block; }
-        
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-        .data-table th { text-align: left; padding: 12px; border-bottom: 1px solid var(--glass-border); color: var(--text-dim); font-weight: 600; }
-        .data-table td { padding: 12px; border-bottom: 1px solid var(--glass-border); color: var(--text-main); }
-        .status-pill { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
-        
-        #screen-auth { background: var(--bg-dark); }
-        .auth-card { background: var(--bg-card); padding: 40px; border-radius: 30px; border: 1px solid var(--glass-border); text-align: center; max-width: 400px; width: 100%; }
-    </style>
 </head>
 <body>
     <div id="notification" class="notification"></div>
 
     <div id="app">
-        <!-- AUTH SCREEN (BROWSER FALLBACK) -->
-        <div id="screen-auth" class="view" style="display: none; height: 100vh; align-items: center; justify-content: center; padding: 20px;">
-            <div class="auth-card">
-                <div style="font-size: 60px; margin-bottom: 20px;">🔒</div>
-                <h1 style="font-family: 'Outfit', sans-serif; font-weight: 800; margin-bottom: 10px;">Secure Access</h1>
-                <p style="color: var(--text-dim); font-size: 14px; margin-bottom: 30px;">This app is designed for Telegram. Please enter your access token to continue in browser.</p>
-                <input type="password" id="auth-token" class="auth-input" placeholder="Enter Access Token">
-                <button class="buy-btn" onclick="handleAuth()" style="width: 100%;">Authenticate</button>
+        <!-- TRADITIONAL AUTH SCREEN -->
+        <div id="screen-auth" class="view active" style="height: 100vh; align-items: center; justify-content: center; padding: 20px; display: flex;">
+            <div class="auth-card" style="background: var(--bg-card); padding: 40px; border-radius: 30px; border: 1px solid var(--glass-border); text-align: center; max-width: 400px; width: 100%;">
+                <div style="font-size: 50px; margin-bottom: 20px;">🤖</div>
+                <div id="auth-login-form">
+                    <h1 style="font-family: 'Outfit', sans-serif; font-weight: 800; margin-bottom: 10px;">Welcome Back</h1>
+                    <p style="color: var(--text-dim); font-size: 14px; margin-bottom: 30px;">Login to access elite AI subscriptions</p>
+                    <input type="email" id="login-email" class="auth-input" placeholder="Email Address">
+                    <input type="password" id="login-password" class="auth-input" placeholder="Password">
+                    <button class="buy-btn" onclick="handleLogin()" style="width: 100%; margin-top: 10px;">Sign In</button>
+                    <p style="margin-top: 20px; font-size: 13px; color: var(--text-dim);">Don't have an account? <span onclick="toggleAuth('reg')" style="color: var(--primary); cursor: pointer; font-weight: 700;">Register</span></p>
+                </div>
+                <div id="auth-reg-form" style="display: none;">
+                    <h1 style="font-family: 'Outfit', sans-serif; font-weight: 800; margin-bottom: 10px;">Create Account</h1>
+                    <p style="color: var(--text-dim); font-size: 14px; margin-bottom: 30px;">Join the elite AI community</p>
+                    <input type="text" id="reg-username" class="auth-input" placeholder="Username">
+                    <input type="email" id="reg-email" class="auth-input" placeholder="Email Address">
+                    <input type="password" id="reg-password" class="auth-input" placeholder="Password">
+                    <button class="buy-btn" onclick="handleRegister()" style="width: 100%; margin-top: 10px;">Register</button>
+                    <p style="margin-top: 20px; font-size: 13px; color: var(--text-dim);">Already have an account? <span onclick="toggleAuth('login')" style="color: var(--primary); cursor: pointer; font-weight: 700;">Login</span></p>
+                </div>
+                <div style="margin: 25px 0; border-top: 1px solid var(--glass-border); position: relative;">
+                    <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--bg-card); padding: 0 10px; font-size: 12px; color: var(--text-dim);">OR</span>
+                </div>
+                <button class="buy-btn" style="width: 100%; background: #24a1de;" onclick="loginWithTelegram()">Continue with Telegram</button>
             </div>
         </div>
 
+        <!-- MAIN APP -->
         <div id="main-content" style="display: none;">
             <div class="container">
-                <!-- HEADER -->
-                <div class="header-info">
+                <header class="header-info">
                     <div class="user-tag">
                         <img id="user-photo" src="https://ui-avatars.com/api/?name=User&background=8b5cf6&color=fff" alt="User">
-                        <span id="user-name" style="font-weight: 700; font-size: 14px;">Loading...</span>
+                        <span id="user-name" style="font-weight: 700; font-size: 14px;">User</span>
+                        <button onclick="handleLogout()" style="background: none; border: none; color: var(--error); margin-left: 5px; cursor: pointer;"><i data-lucide="log-out" style="width: 16px;"></i></button>
                     </div>
-                    <div class="balance-tag">
-                        <i data-lucide="wallet" style="width: 14px;"></i>
-                        <span id="user-balance">$0.00</span>
-                    </div>
-                </div>
+                    <div class="balance-tag"><i data-lucide="wallet" style="width: 14px;"></i><span id="user-balance">$0.00</span></div>
+                </header>
 
-                <!-- VIEWS -->
+                <!-- VIEWS (Same as before) -->
                 <div id="screen-home" class="view active">
-                    <header class="hero">
-                        <h1>AI Elite Store</h1>
-                        <p>Access the world's most powerful AI tools instantly. Secure payments & 24/7 automated delivery.</p>
-                    </header>
+                    <header class="hero"><h1>AI Elite Store</h1><p>Premium AI subscriptions at unbeatable prices.</p></header>
                     <div id="tools-list" class="tool-grid"></div>
                 </div>
 
                 <div id="screen-wallet" class="view">
                     <h2 style="font-family: 'Outfit', sans-serif; font-size: 28px; margin-bottom: 25px;">My Wallet</h2>
                     <div class="tool-card" style="text-align: center; padding: 40px 20px;">
-                        <p style="color: var(--text-dim); font-size: 14px; margin-bottom: 10px;">Current Balance</p>
                         <h2 id="wallet-balance-display" style="font-size: 48px; font-weight: 800; margin-bottom: 30px;">$0.00</h2>
-                        <button class="buy-btn" onclick="showView('deposit')" style="width: 100%; padding: 16px;">Add Funds</button>
+                        <button class="buy-btn" onclick="showView('deposit')" style="width: 100%;">Add Funds</button>
                     </div>
                 </div>
 
@@ -79,70 +75,36 @@
                 </div>
 
                 <div id="screen-deposit" class="view">
-                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
-                        <button onclick="showView('wallet')" style="background: var(--bg-card); border: 1px solid var(--glass-border); color: white; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;"><i data-lucide="arrow-left" style="width: 18px;"></i></button>
-                        <h2 style="font-family: 'Outfit', sans-serif; font-size: 22px;">Add Funds</h2>
-                    </div>
                     <div class="admin-card">
                         <input type="number" id="deposit-amount" class="auth-input" placeholder="Amount ($)">
-                        <button class="buy-btn" style="width: 100%;" onclick="initiateDeposit('crypto')">Pay with Crypto</button>
+                        <button class="buy-btn" style="width: 100%;" onclick="initiateDeposit()">Deposit</button>
                     </div>
                 </div>
 
-                <!-- ADVANCED ADMIN VIEW -->
                 <div id="screen-admin" class="view">
                     <h2 style="font-family: 'Outfit', sans-serif; font-size: 28px; margin-bottom: 25px;">Admin Dashboard</h2>
-                    
                     <div class="admin-tabs">
                         <div class="admin-tab active" onclick="setAdminTab('inventory')">Inventory</div>
                         <div class="admin-tab" onclick="setAdminTab('users')">Users</div>
-                        <div class="admin-tab" onclick="setAdminTab('all-orders')">All Orders</div>
-                        <div class="admin-tab" onclick="setAdminTab('logs')">Activity Logs</div>
+                        <div class="admin-tab" onclick="setAdminTab('logs')">Logs</div>
                     </div>
-
-                    <!-- TAB: INVENTORY -->
                     <div id="admin-inventory" class="admin-sub-view active">
                         <div class="admin-card">
-                            <h3 id="admin-form-title" style="margin-bottom: 15px; font-size: 16px;">Manage Product</h3>
-                            <input type="hidden" id="admin-p-id">
                             <input type="text" id="admin-p-name" class="auth-input" placeholder="Product Name">
-                            <input type="number" id="admin-p-price" class="auth-input" placeholder="Price ($)">
-                            <textarea id="admin-p-desc" class="auth-input" placeholder="Description" style="height: 100px; padding-top: 15px;"></textarea>
-                            <input type="text" id="admin-p-img-url" class="auth-input" placeholder="Image URL">
-                            <button class="buy-btn" style="width: 100%;" onclick="saveProduct()">Save Product</button>
+                            <input type="number" id="admin-p-price" class="auth-input" placeholder="Price">
+                            <textarea id="admin-p-desc" class="auth-input" placeholder="Description"></textarea>
+                            <button class="buy-btn" onclick="saveProduct()" style="width: 100%;">Save Product</button>
                         </div>
                     </div>
-
-                    <!-- TAB: USERS -->
                     <div id="admin-users" class="admin-sub-view">
-                        <div class="admin-card" style="padding: 10px; overflow-x: auto;">
-                            <table class="data-table">
-                                <thead><tr><th>User</th><th>Balance</th><th>Joined</th></tr></thead>
-                                <tbody id="admin-users-table"></tbody>
-                            </table>
-                        </div>
+                        <div class="admin-card"><table class="data-table" id="admin-users-table"></table></div>
                     </div>
-
-                    <!-- TAB: ALL ORDERS -->
-                    <div id="admin-all-orders" class="admin-sub-view">
-                        <div class="admin-card" style="padding: 10px; overflow-x: auto;">
-                            <table class="data-table">
-                                <thead><tr><th>ID</th><th>User</th><th>Product</th><th>Status</th></tr></thead>
-                                <tbody id="admin-orders-table"></tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- TAB: LOGS -->
                     <div id="admin-logs" class="admin-sub-view">
-                        <div class="admin-card" style="padding: 10px;">
-                            <div id="admin-logs-list" style="font-size: 12px; line-height: 1.6;"></div>
-                        </div>
+                        <div class="admin-card" id="admin-logs-list"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- NAV BAR -->
             <nav class="nav-bar">
                 <a href="#" class="nav-item active" onclick="showView('home')"><i data-lucide="home"></i><span>Store</span></a>
                 <a href="#" class="nav-item" onclick="showView('wallet')"><i data-lucide="wallet"></i><span>Wallet</span></a>

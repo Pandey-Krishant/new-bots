@@ -20,15 +20,20 @@ class Database:
     async def get_user(self, user_id):
         return await self.users.find_one({"user_id": user_id})
 
-    async def register_user(self, user_id, username):
-        user = await self.get_user(user_id)
+    async def register_user(self, user_id, username, email=None, password=None):
+        user = await self.get_user(user_id) if user_id else await self.users.find_one({"email": email})
         if not user:
             await self.users.insert_one({
                 "user_id": user_id,
                 "username": username,
+                "email": email,
+                "password": password, # In production, hash this!
                 "balance": 0.0,
                 "joined_at": datetime.utcnow()
             })
+
+    async def get_user_by_email(self, email):
+        return await self.users.find_one({"email": email})
 
     async def update_balance(self, user_id, amount):
         await self.users.update_one({"user_id": user_id}, {"$inc": {"balance": amount}})

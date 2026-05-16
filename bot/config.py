@@ -15,7 +15,7 @@ DB_NAME = os.getenv("DB_NAME", "ai_subscription_bot")
 ADMIN_IDS = [int(id) for id in os.getenv("ADMIN_IDS", "0").split(",") if id.isdigit()]
 
 # WebApp Settings
-WEBAPP_URL = os.getenv("WEBAPP_URL", "https://your-webapp-url.com")
+WEBAPP_URL = os.getenv("WEBAPP_URL", "https://new-bots.vercel.app/")
 
 # Premium Formatting Elements
 DIVIDER = "────────────"

@@ -33,9 +33,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         ]
     ]
     
-    if user.id in ADMIN_IDS:
-        keyboard.append([InlineKeyboardButton("🛠 Admin Panel", web_app=WebAppInfo(url=f"{WEBAPP_URL}?admin=true"))])
-
     reply_markup = InlineKeyboardMarkup(keyboard)
     welcome_text = (
         f"<b>Welcome back, {user.first_name}!</b> 🚀\n\n"
@@ -57,6 +54,26 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     
     if query.data == 'back_to_start':
         await start(update, context)
+    elif query.data == 'my_wallet':
+        user = await db.get_user(query.from_user.id)
+        balance = user.get('balance', 0.0) if user else 0.0
+        text = (
+            "<b>💳 My Wallet</b>\n\n"
+            f"💰 <b>Current Balance:</b> <code>${balance:.2f}</code>\n\n"
+            "To add funds, please use the <b>🚀 Launch Elite Store</b> button below."
+        )
+        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data='back_to_start')]]), parse_mode='HTML')
+    elif query.data == 'my_orders':
+        orders = await db.get_user_orders(query.from_user.id)
+        if not orders:
+            text = "<b>📦 My Orders</b>\n\nYou haven't made any purchases yet."
+        else:
+            text = "<b>📦 Your Recent Orders:</b>\n\n"
+            for o in orders[:5]:
+                status_icon = "✅" if o['status'] == 'Completed' else "⏳"
+                text += f"{status_icon} <b>{o['plan_name']}</b>\n   └ Price: ${o['total_price']} | Status: {o['status']}\n\n"
+        
+        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data='back_to_start')]]), parse_mode='HTML')
     elif query.data == 'support':
         text = (
             "<b>📞 Customer Support</b>\n\n"

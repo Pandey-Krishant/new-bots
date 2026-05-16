@@ -232,7 +232,7 @@ async def create_payment(request: Request):
     amount = data.get("amount")
     network = data.get("network", "usdttrc20")
     
-    r = requests.post("https://api.nowpayments.io/v1/payment", json={
+    r = requests.post("https://api.nowpayments.io/v1/invoice", json={
         "price_amount": float(amount),
         "price_currency": "usd",
         "pay_currency": network,

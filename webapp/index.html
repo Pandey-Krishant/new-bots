@@ -14,13 +14,26 @@
 <body>
     <div class="bg-glow"></div>
     
+    <!-- Custom Notification -->
+    <div id="notification" class="notification"></div>
+
+    <!-- Custom Confirm Modal -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal">
+            <h3 id="modal-title">Confirm Action</h3>
+            <p id="modal-body">Are you sure?</p>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" onclick="closeModal(false)">Cancel</button>
+                <button class="modal-btn primary" onclick="closeModal(true)">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <div id="app">
-        <!-- AUTH SCREEN (Login/Register) -->
+        <!-- AUTH SCREEN -->
         <div id="screen-auth" class="screen active">
             <div class="login-container">
                 <div class="logo">🚀</div>
-                
-                <!-- Login Form -->
                 <div id="form-login">
                     <h1>Welcome Back</h1>
                     <p>Login with your credentials</p>
@@ -31,8 +44,6 @@
                     <button class="primary-btn" onclick="handleLogin()">Login</button>
                     <p class="switch-text">Don't have an account? <span onclick="toggleAuth('register')">Register Now</span></p>
                 </div>
-
-                <!-- Register Form -->
                 <div id="form-register" style="display: none;">
                     <h1>Create Account</h1>
                     <p>Join the AI Premium community</p>
@@ -60,7 +71,6 @@
                         <h1>Premium AI Store</h1>
                         <p>Get instant access to the world's most powerful AI tools at unbeatable prices.</p>
                     </header>
-
                     <section class="featured">
                         <div class="featured-card">
                             <div class="featured-icon">🚀</div>
@@ -72,7 +82,6 @@
                             <button class="buy-btn" onclick="openCheckout('ChatGPT Plus', 19.99)">Buy Now</button>
                         </div>
                     </section>
-
                     <section class="tools">
                         <div class="section-header"><h3>AI Subscriptions</h3></div>
                         <div class="tool-grid" id="tools-list"></div>
@@ -94,16 +103,11 @@
                         <div class="net-btn" onclick="selectNetwork('USDT (TRC-20)')">USDT (TRC-20)</div>
                         <div class="net-btn" onclick="selectNetwork('USDT (BEP-20)')">USDT (BEP-20)</div>
                         <div class="net-btn" onclick="selectNetwork('USDT (ERC-20)')">USDT (ERC-20)</div>
-                        <div class="net-btn" onclick="selectNetwork('USDT (Aptos)')">USDT (Aptos)</div>
                         <div class="net-btn" onclick="selectNetwork('TON Coin')">TON Coin</div>
                         <div class="net-btn" onclick="selectNetwork('Bitcoin (BTC)')">Bitcoin (BTC)</div>
-                        <div class="net-btn" onclick="selectNetwork('Ethereum (ETH)')">Ethereum (ETH)</div>
-                        <div class="net-btn" onclick="selectNetwork('Solana (SOL)')">Solana (SOL)</div>
-                        <div class="net-btn" onclick="selectNetwork('Litecoin (LTC)')">Litecoin (LTC)</div>
-                        <div class="net-btn" onclick="selectNetwork('Tron (TRX)')">Tron (TRX)</div>
                     </div>
                     <div id="payment-details" style="display: none; margin-top: 24px;">
-                        <div class="alert warning">⚠️ Send exactly <span id="pay-amount"></span> worth of <span id="pay-network"></span> to the address:</div>
+                        <div class="alert warning">⚠️ Send exactly <span id="pay-amount"></span> worth of <span id="pay-network"></span>:</div>
                         <div class="address-box" onclick="copyAddress()"><code id="wallet-address"></code><i data-lucide="copy"></i></div>
                         <p class="tap-hint">(Tap to copy)</p>
                         <button class="primary-btn" onclick="confirmPayment()">✅ I Have Paid</button>
@@ -122,9 +126,6 @@
                     <div class="wallet-card">
                         <p>Total Balance</p>
                         <h3 id="display-balance">$0.00</h3>
-                        <div class="wallet-actions">
-                            <button onclick="tg.showAlert('Coming soon!')"><i data-lucide="plus-circle"></i> Add Funds</button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -134,7 +135,6 @@
                 <a href="#" class="nav-item active" onclick="showView('home')"><i data-lucide="home"></i><span>Home</span></a>
                 <a href="#" class="nav-item" onclick="showView('wallet')"><i data-lucide="wallet"></i><span>Wallet</span></a>
                 <a href="#" class="nav-item" onclick="showView('orders')"><i data-lucide="clock"></i><span>Orders</span></a>
-                <a href="#" class="nav-item" onclick="showView('support')"><i data-lucide="shield-check"></i><span>Support</span></a>
             </nav>
         </div>
     </div>

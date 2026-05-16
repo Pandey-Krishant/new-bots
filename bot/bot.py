@@ -10,7 +10,12 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    await db.register_user(user.id, user.username)
+    print(f"DEBUG: Start command received from {user.id} (@{user.username})")
+    try:
+        await db.register_user(user.id, user.username)
+    except Exception as e:
+        print(f"ERROR: Database connection failed: {e}")
+        # Optionally notify the user, but we proceed to show the UI
     
     text = (
         f"<b>Welcome to AI Premium Store</b>\n"
@@ -331,7 +336,8 @@ async def main():
     
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_txid))
     
-    print("Bot is running...")
+    print(f"Bot is running...")
+    print(f"Configured WebApp URL: {WEBAPP_URL}")
     async with application:
         await application.initialize()
         await application.start()

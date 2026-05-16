@@ -53,7 +53,7 @@
                             <div class="user-info">
                                 <span style="font-weight: 800; font-size: 18px;" id="home-username">@User</span>
                             </div>
-                            <div class="balance-badge" style="background: rgba(139, 92, 246, 0.2); border: 1px solid var(--primary); padding: 8px 16px; border-radius: 100px; display: flex; align-items: center; gap: 8px;">
+                            <div class="balance-badge">
                                 <i data-lucide="wallet" style="width: 16px; color: var(--primary);"></i>
                                 <span id="home-balance" style="font-weight: 800; font-size: 14px; color: white;">$0.00</span>
                             </div>
@@ -90,62 +90,59 @@
 
                 <!-- DEPOSIT / PAYMENT INTERFACE -->
                 <div id="screen-deposit" class="view">
-                    <div class="view-header">
+                    <div class="view-header" style="margin-bottom: 15px;">
                         <button onclick="showView('home')" class="back-btn"><i data-lucide="chevron-left"></i></button>
-                        <h2>Secure Payment</h2>
-                    </div>
-                    <div class="tool-card" style="margin-bottom: 24px; border: 1px solid var(--primary); padding: 20px;">
-                        <p style="font-size: 12px; color: var(--text-dim);">Paying for:</p>
-                        <h3 id="pay-for-item">Wallet Deposit</h3>
-                        <div style="font-size: 18px; font-weight: 800; color: var(--primary);">Amount: <span id="pay-required-amount">$0.00</span></div>
+                        <h2 style="font-size: 20px;">🛒 Order Summary</h2>
                     </div>
                     
-                    <p style="color: var(--text-dim); margin-bottom: 15px; font-size: 14px;">Select payment method:</p>
-                    <div class="network-grid">
-                        <div class="net-btn" onclick="selectDeposit('USDT (TRC-20)')">USDT (TRC-20)</div>
-                        <div class="net-btn" onclick="selectDeposit('TON Coin')">TON Coin</div>
-                        <div class="net-btn" onclick="selectDeposit('Bitcoin (BTC)')">Bitcoin (BTC)</div>
+                    <div style="margin-bottom: 30px;">
+                        <div style="font-size: 22px; font-weight: 800; color: white;">Total Amount: <span id="pay-required-amount" style="color: white;">$0.00</span></div>
                     </div>
 
-                    <div id="deposit-details" style="display: none; margin-top: 24px; text-align: center;">
-                        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 20px; border-radius: 20px;">
-                            <!-- QR CODE -->
-                            <div id="qr-container" style="background: white; padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 20px;">
-                                <img id="qr-image" src="" alt="Payment QR" style="width: 150px; height: 150px; display: block;">
-                            </div>
+                    <p style="color: var(--text-dim); margin-bottom: 20px; font-size: 14px;">Please select your preferred cryptocurrency/network for payment:</p>
+                    
+                    <div class="network-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="net-btn" onclick="selectDeposit('USDT (TRC-20)')">USDT (TRC-20)</div>
+                        <div class="net-btn" onclick="selectDeposit('USDT (BEP-20)')">USDT (BEP-20)</div>
+                        <div class="net-btn" onclick="selectDeposit('USDT (ERC-20)')">USDT (ERC-20)</div>
+                        <div class="net-btn" onclick="selectDeposit('USDT (Aptos)')">USDT (Aptos)</div>
+                        <div class="net-btn" onclick="selectDeposit('TON Coin')">TON Coin</div>
+                        <div class="net-btn" onclick="selectDeposit('Bitcoin (BTC)')">Bitcoin (BTC)</div>
+                        <div class="net-btn" onclick="selectDeposit('Ethereum (ETH)')">Ethereum (ETH)</div>
+                        <div class="net-btn" onclick="selectDeposit('Solana (SOL)')">Solana (SOL)</div>
+                        <div class="net-btn" onclick="selectDeposit('Litecoin (LTC)')">Litecoin (LTC)</div>
+                        <div class="net-btn" onclick="selectDeposit('Tron (TRX)')">Tron (TRX)</div>
+                    </div>
 
-                            <div style="text-align: left; margin-bottom: 20px;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                    <span style="font-size: 12px; color: var(--text-dim);">Transaction ID:</span>
-                                    <span id="display-txid" style="font-family: monospace; font-weight: 700; color: var(--primary);">Generating...</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span style="font-size: 12px; color: var(--text-dim);">Status:</span>
-                                    <span style="font-size: 12px; font-weight: 700; color: #f59e0b;">Awaiting Payment</span>
-                                </div>
-                            </div>
+                    <div id="deposit-details" style="display: none; margin-top: 30px; animation: slideUp 0.3s ease;">
+                        <div id="qr-container" style="background: white; padding: 10px; border-radius: 12px; display: inline-block; margin-bottom: 20px;">
+                            <img id="qr-image" src="" alt="Payment QR" style="width: 140px; height: 140px; display: block;">
+                        </div>
 
-                            <div class="alert" style="background: rgba(139, 92, 246, 0.1); border: 1px solid var(--primary); padding: 12px; border-radius: 12px; font-size: 13px; margin-bottom: 15px;">
-                                Send <span id="deposit-pay-amount" style="font-weight: 800;"></span> to:
-                            </div>
+                        <div style="text-align: left; margin-bottom: 20px;">
+                            <p style="color: #f59e0b; font-size: 14px; margin-bottom: 15px;">
+                                ⚠️ Please send exactly <span id="deposit-pay-amount" style="font-weight: 800;"></span> worth of <span id="deposit-net-name" style="font-weight: 800;"></span> to the address below:
+                            </p>
                             
-                            <div class="address-box" onclick="copyAddress()" style="background: #000; border: 1px dashed #333; cursor: pointer;">
-                                <code id="deposit-address" style="font-size: 11px;"></code>
-                                <i data-lucide="copy" style="width: 16px;"></i>
+                            <div class="address-box" onclick="copyAddress()" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; margin-bottom: 10px;">
+                                <code id="deposit-address" style="font-size: 12px; color: #ff6b6b; word-break: break-all;"></code>
                             </div>
+                            <p style="font-size: 12px; color: var(--text-dim); text-align: center;">(Tap the address to copy)</p>
+                        </div>
+
+                        <div class="alert" style="background: rgba(239, 68, 68, 0.1); border: none; color: #ff6b6b; font-size: 12px; padding: 15px;">
+                            🚨 NOTE: KINDLY SELECT THE NETWORK WHICH YOU HAVE CHOSEN OR YOUR ASSETS WILL BE LOST.
                         </div>
 
                         <button class="primary-btn" style="margin-top: 30px;" onclick="confirmDeposit()">✅ I Have Sent Payment</button>
                     </div>
                 </div>
 
-                <!-- ORDERS VIEW -->
+                <!-- OTHER VIEWS REMAIN SAME -->
                 <div id="screen-orders" class="view">
                     <div class="view-header"><h2>📦 My Orders</h2></div>
                     <div class="orders-list" id="orders-list"></div>
                 </div>
-
-                <!-- WALLET VIEW -->
                 <div id="screen-wallet" class="view">
                     <div class="view-header"><h2>💳 My Wallet</h2></div>
                     <div class="wallet-card" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); padding: 40px; border-radius: 24px; text-align: center;">
@@ -154,20 +151,16 @@
                         <button onclick="openGenericDeposit()" style="margin-top: 20px; background: rgba(255,255,255,0.2); border: none; padding: 10px 20px; border-radius: 10px; color: white; font-weight: 700;">+ Deposit</button>
                     </div>
                 </div>
-
-                <!-- SUPPORT VIEW -->
                 <div id="screen-support" class="view">
                     <div class="view-header"><h2>📞 Support</h2></div>
                     <div class="tool-card" style="padding: 30px; text-align: center;">
                         <div style="font-size: 60px; margin-bottom: 20px;">🛡️</div>
                         <h3>24/7 Live Support</h3>
-                        <p style="margin-bottom: 30px; color: var(--text-dim);">Contact our official support for payment issues or premium access queries.</p>
-                        <a href="https://t.me/YourSupportUser" target="_blank" class="primary-btn" style="text-decoration: none; display: block;">Contact on Telegram</a>
+                        <a href="https://t.me/YourSupportUser" target="_blank" class="primary-btn" style="text-decoration: none; display: block; margin-top: 20px;">Contact on Telegram</a>
                     </div>
                 </div>
             </div>
 
-            <!-- Bottom Nav -->
             <nav class="nav-bar">
                 <a href="#" class="nav-item active" onclick="showView('home')"><i data-lucide="home"></i><span>Home</span></a>
                 <a href="#" class="nav-item" onclick="showView('wallet')"><i data-lucide="wallet"></i><span>Wallet</span></a>

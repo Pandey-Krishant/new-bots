@@ -91,13 +91,13 @@ body {
 .view-header h2 { font-size: 26px; font-weight: 800; }
 
 .checkout-header { display: flex; align-items: center; gap: 15px; margin-bottom: 40px; }
-.network-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 30px 0; }
-.net-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); padding: 18px; border-radius: 14px; text-align: center; cursor: pointer; font-weight: 600; }
-.net-btn.selected { background: var(--primary); border-color: var(--primary); }
+.network-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+.net-btn { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.05); padding: 14px 10px; border-radius: 10px; text-align: center; cursor: pointer; font-weight: 500; font-size: 13px; color: rgba(255, 255, 255, 0.8); }
+.net-btn.selected { background: #3b3b3b; border-color: rgba(255, 255, 255, 0.2); color: white; }
 
 .alert { background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; padding: 20px; border-radius: 16px; margin: 20px 0; font-size: 14px; }
-.address-box { background: #000; padding: 18px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; border: 1px dashed #333; cursor: pointer; }
-.address-box code { font-family: monospace; color: var(--secondary); font-size: 12px; word-break: break-all; }
+.address-box { background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; }
+.address-box code { font-family: monospace; color: #ff5e5e; font-size: 12px; word-break: break-all; }
 
 /* Nav Bar */
 .nav-bar { position: fixed; bottom: 20px; left: 20px; right: 20px; height: 75px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 24px; display: flex; justify-content: space-around; align-items: center; z-index: 1000; }

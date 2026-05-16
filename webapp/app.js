@@ -186,27 +186,88 @@ function handleLogout() {
 }
 
 async function handleAdminAdd() {
+    const id = document.getElementById('admin-p-id').value;
     const name = document.getElementById('admin-p-name').value;
     const price = document.getElementById('admin-p-price').value;
     const desc = document.getElementById('admin-p-desc').value;
-    const image = document.getElementById('admin-p-image').value;
+    const fileInput = document.getElementById('admin-p-file');
+    
+    let imageUrl = document.getElementById('admin-p-preview').src;
 
     if (!name || !price) return notify('Name and Price required');
 
-    notify('⌛ Listing product...', true);
+    // CONVERT FILE TO BASE64 IF NEW FILE SELECTED
+    if (fileInput.files && fileInput.files[0]) {
+        notify('📸 Processing Image...', true);
+        imageUrl = await toBase64(fileInput.files[0]);
+    }
+
+    notify('⌛ Saving product...', true);
     try {
-        const response = await fetch('http://localhost:8000/add-plan', {
+        const endpoint = id ? 'http://localhost:8000/update-plan' : 'http://localhost:8000/add-plan';
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, price, description: desc, image_url: image })
+            body: JSON.stringify({ id, name, price, description: desc, image_url: imageUrl })
         });
         const data = await response.json();
         if (data.status === 'ok') {
-            notify('✅ Product added successfully!', true);
-            showView('home');
-            fetchPlans(); // Refresh list
+            notify(`✅ Product ${id ? 'updated' : 'added'}!`, true);
+            resetAdminForm();
+            fetchPlans();
         }
     } catch (e) { notify('API Error'); }
+}
+
+function toBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+}
+
+function editProduct(id) {
+    const tool = state.tools.find(t => t._id === id);
+    if (!tool) return;
+    
+    document.getElementById('admin-p-id').value = tool._id;
+    document.getElementById('admin-p-name').value = tool.name;
+    document.getElementById('admin-p-price').value = tool.price;
+    document.getElementById('admin-p-desc').value = tool.description || tool.desc || '';
+    document.getElementById('admin-p-preview').src = tool.image_url || '';
+    document.getElementById('image-preview-container').style.display = 'block';
+    
+    document.getElementById('admin-form-title').innerText = '📝 Edit Product';
+    document.getElementById('admin-cancel-edit').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetAdminForm() {
+    document.getElementById('admin-p-id').value = '';
+    document.getElementById('admin-p-name').value = '';
+    document.getElementById('admin-p-price').value = '';
+    document.getElementById('admin-p-desc').value = '';
+    document.getElementById('admin-p-file').value = '';
+    document.getElementById('admin-p-preview').src = '';
+    document.getElementById('image-preview-container').style.display = 'none';
+    document.getElementById('admin-form-title').innerText = '🚀 Add New Product';
+    document.getElementById('admin-cancel-edit').style.display = 'none';
+}
+
+async function deleteProduct(name) {
+    if (!confirm(`Are you sure you want to delete ${name}?`)) return;
+    notify('🗑 Deleting...', true);
+    try {
+        await fetch('http://localhost:8000/delete-plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        notify('Done!', true);
+        fetchPlans();
+    } catch (e) { notify('Delete failed'); }
 }
 
 async function fetchPlans() {
@@ -216,8 +277,29 @@ async function fetchPlans() {
         if (data.length > 0) {
             state.tools = data;
             renderTools();
+            renderAdminTools();
         }
     } catch (e) { console.log("Using default tools"); }
+}
+
+function renderAdminTools() {
+    const list = document.getElementById('admin-tools-list');
+    list.innerHTML = state.tools.map(tool => `
+        <div class="tool-card" style="padding: 15px; margin-bottom: 10px;">
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <img src="${tool.image_url || ''}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #000;">
+                <div style="flex-grow: 1;">
+                    <h4 style="font-size: 16px;">${tool.name}</h4>
+                    <p style="font-size: 12px; color: var(--text-dim);">$${tool.price}</p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="editProduct('${tool._id}')" style="background: rgba(139, 92, 246, 0.2); color: var(--primary); border: none; padding: 8px; border-radius: 8px; cursor: pointer;"><i data-lucide="edit-3" style="width: 16px;"></i></button>
+                    <button onclick="deleteProduct('${tool.name}')" style="background: rgba(239, 68, 68, 0.2); color: #ff6b6b; border: none; padding: 8px; border-radius: 8px; cursor: pointer;"><i data-lucide="trash-2" style="width: 16px;"></i></button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    lucide.createIcons();
 }
 
 // Init

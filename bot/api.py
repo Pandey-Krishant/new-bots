@@ -41,28 +41,28 @@ async def add_plan(data: dict):
     send_admin_alert(f"🚀 <b>New Product Added via Frontend!</b>\nName: {data.get('name')}\nPrice: ${data.get('price')}")
     return {"status": "ok"}
 
+@app.post("/update-plan")
+async def update_plan(data: dict):
+    await db.update_plan(
+        plan_id=data.get('id'),
+        name=data.get('name'),
+        price=data.get('price'),
+        description=data.get('description'),
+        image_url=data.get('image_url')
+    )
+    send_admin_alert(f"📝 <b>Product Updated via Frontend!</b>\nName: {data.get('name')}")
+    return {"status": "ok"}
+
+@app.post("/delete-plan")
+async def delete_plan(data: dict):
+    await db.delete_plan(name=data.get('name'))
+    send_admin_alert(f"🗑 <b>Product Deleted via Frontend!</b>\nName: {data.get('name')}")
+    return {"status": "ok"}
+
 @app.post("/create-invoice")
 async def create_invoice(data: dict):
-    """Generate a real NOWPayments checkout URL."""
-    # In a real scenario, you'd call NOWPayments API here.
-    # For now, we return a simulated checkout URL as requested.
     target_url = f"https://nowpayments.io/payment/?api_key={NOWPAYMENTS_API_KEY}&amount={data.get('price')}&currency=usd"
-    
-    msg = (
-        f"🔗 <b>Invoice Generated</b>\n\n"
-        f"<b>User:</b> {data.get('user_email')}\n"
-        f"<b>Product:</b> {data.get('name')}\n"
-        f"<b>Redirecting to:</b> NOWPayments"
-    )
-    send_admin_alert(msg)
-    
     return {"url": target_url}
-
-@app.post("/notify-register")
-async def notify_register(data: dict):
-    msg = f"👤 <b>New User Registered</b>\n<b>Email:</b> {data.get('email')}"
-    send_admin_alert(msg)
-    return {"status": "ok"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

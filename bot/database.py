@@ -52,6 +52,16 @@ class Database:
     async def delete_plan(self, name):
         return await self.plans.delete_one({"name": name})
 
+    async def update_plan(self, plan_id, name, price, description, image_url=None):
+        from bson import ObjectId
+        update_data = {
+            "name": name,
+            "price": float(price),
+            "description": description,
+            "image_url": image_url
+        }
+        return await self.plans.update_one({"_id": ObjectId(plan_id)}, {"$set": update_data})
+
     async def get_plan_by_id(self, plan_id):
         return await self.plans.find_one({"_id": plan_id})
 

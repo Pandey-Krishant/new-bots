@@ -126,6 +126,16 @@ function confirmDeposit() {
 function handleLogin() {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-password').value;
+
+    // HARDCODED ADMIN CHECK
+    if (email === 'admin@ai.com' && pass === 'admin11223344') {
+        state.user = { username: 'Admin', email: 'admin@ai.com', balance: 999999 };
+        localStorage.setItem('session_user', JSON.stringify(state.user));
+        showMainApp();
+        notify('🔑 Admin Access Granted', true);
+        return;
+    }
+
     const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
     const user = users.find(u => u.email === email && u.password === pass);
     if (user) {
@@ -141,9 +151,13 @@ function handleRegister() {
     const user = document.getElementById('reg-username').value;
     const email = document.getElementById('reg-email').value;
     const pass = document.getElementById('reg-password').value;
+    
     if (!user || !email || !pass) return notify('Fill all fields');
+    if (email === 'admin@ai.com') return notify('This email is reserved');
     
     const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+    if (users.find(u => u.email === email)) return notify('Email already exists');
+    
     users.push({ username: user, email, password: pass, balance: 0 });
     localStorage.setItem('registered_users', JSON.stringify(users));
     notify('✨ Registered!', true);

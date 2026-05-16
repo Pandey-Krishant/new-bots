@@ -49,39 +49,41 @@ body {
 
 /* Hero Section */
 .hero {
-    padding: 60px 0 40px;
+    padding: 40px 0 30px;
     text-align: center;
 }
 
 .hero h1 {
-    font-size: 42px;
+    font-size: clamp(28px, 8vw, 36px);
     font-weight: 800;
     background: linear-gradient(to right, #fff, var(--primary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 16px;
-    line-height: 1.1;
+    margin-bottom: 12px;
+    line-height: 1.2;
 }
 
 .hero p {
     color: var(--text-dim);
-    font-size: 16px;
-    max-width: 600px;
-    margin: 0 auto 30px;
+    font-size: 14px;
+    max-width: 90%;
+    margin: 0 auto 20px;
 }
 
 /* Featured Card */
 .featured-card {
     background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.1));
     border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    padding: 30px;
+    border-radius: 20px;
+    padding: 20px;
     display: flex;
+    flex-direction: column; /* Stack on mobile */
     align-items: center;
-    gap: 24px;
-    margin-bottom: 50px;
+    gap: 15px;
+    margin-bottom: 40px;
     position: relative;
     overflow: hidden;
+    text-align: center;
 }
 
 .featured-card::after {

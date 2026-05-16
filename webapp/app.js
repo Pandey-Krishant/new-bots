@@ -19,88 +19,14 @@ const state = {
     orders: []
 };
 
-// --- CUSTOM NOTIFICATIONS ---
+// --- CORE FUNCTIONS ---
 function notify(msg, isSuccess = false) {
     const el = document.getElementById('notification');
     el.innerText = msg;
     el.style.borderLeft = isSuccess ? '5px solid #10b981' : '5px solid #ef4444';
     el.classList.add('show');
     setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-// --- AUTH LOGIC ---
-function toggleAuth(type) {
-    document.getElementById('form-login').style.display = type === 'register' ? 'none' : 'block';
-    document.getElementById('form-register').style.display = type === 'register' ? 'block' : 'none';
-}
-
-function handleRegister() {
-    const username = document.getElementById('reg-username').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const password = document.getElementById('reg-password').value.trim();
-
-    if (!username || !email || !password) {
-        notify('All fields are required!');
-        return;
-    }
-
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    if (users.find(u => u.email === email)) {
-        notify('Email already registered!');
-        return;
-    }
-
-    users.push({ username, email, password, balance: 0.00 });
-    localStorage.setItem('registered_users', JSON.stringify(users));
-
-    notify('✨ Registration Successful! Please login.', true);
-    setTimeout(() => toggleAuth('login'), 1500);
-}
-
-function handleLogin() {
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value.trim();
-
-    if (!email || !password) {
-        notify('Please fill in all fields');
-        return;
-    }
-
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    const user = users.find(u => u.email === email && u.password === password);
-
-    if (user) {
-        state.user = user;
-        localStorage.setItem('session_user', JSON.stringify(user));
-        notify('🚀 Login Successful!', true);
-        setTimeout(showMainApp, 800);
-    } else {
-        notify('Invalid email or password!');
-    }
-}
-
-function handleLogout() {
-    localStorage.removeItem('session_user');
-    state.user = null;
-    document.getElementById('main-content').style.display = 'none';
-    document.getElementById('screen-auth').classList.add('active');
-}
-
-function showMainApp() {
-    document.getElementById('screen-auth').classList.remove('active');
-    document.getElementById('main-content').style.display = 'block';
-    showView('home');
-}
-
-// --- INITIALIZATION ---
-function init() {
-    const session = localStorage.getItem('session_user');
-    if (session) {
-        state.user = JSON.parse(session);
-        showMainApp();
-    }
-    renderTools();
-    lucide.createIcons();
+    if (isSuccess) tg.HapticFeedback.notificationOccurred('success');
 }
 
 function showView(viewId) {
@@ -112,10 +38,134 @@ function showView(viewId) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// --- AUTH ---
+function toggleAuth(type) {
+    document.getElementById('form-login').style.display = type === 'register' ? 'none' : 'block';
+    document.getElementById('form-register').style.display = type === 'register' ? 'block' : 'none';
+}
+
+function handleRegister() {
+    const username = document.getElementById('reg-username').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value.trim();
+
+    if (!username || !email || !password) { notify('All fields required!'); return; }
+
+    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+    if (users.find(u => u.email === email)) { notify('Email already registered!'); return; }
+
+    users.push({ username, email, password, balance: 0.00 });
+    localStorage.setItem('registered_users', JSON.stringify(users));
+    notify('✨ Registered! Please login.', true);
+    toggleAuth('login');
+}
+
+function handleLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+
+    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+    const user = users.find(u => u.email === email && u.password === password);
+
+    if (user) {
+        state.user = user;
+        localStorage.setItem('session_user', JSON.stringify(user));
+        notify('🚀 Welcome back!', true);
+        showMainApp();
+    } else {
+        notify('Invalid credentials!');
+    }
+}
+
+function showMainApp() {
+    document.getElementById('screen-auth').classList.remove('active');
+    document.getElementById('main-content').style.display = 'block';
+    updateWalletDisplay();
+    showView('home');
+}
+
+function updateWalletDisplay() {
+    document.getElementById('display-balance').innerText = `$${state.user.balance.toFixed(2)}`;
+}
+
+// --- PURCHASE FLOW ---
+function checkAccess(name, price) {
+    state.selectedPlan = { name, price };
+    
+    if (state.user.balance >= price) {
+        // Sufficient Balance -> Show Checkout
+        document.getElementById('checkout-item-name').innerText = name;
+        document.getElementById('checkout-total').innerText = `$${price}`;
+        showView('checkout');
+    } else {
+        // Insufficient Balance -> Show Deposit
+        showView('deposit');
+        notify('Insufficient funds! Please deposit first.');
+    }
+}
+
+function selectDeposit(network) {
+    state.selectedNetwork = network;
+    document.querySelectorAll('.net-btn').forEach(btn => btn.classList.toggle('selected', btn.innerText === network));
+    const addrs = { 
+        'USDT (TRC-20)': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+        'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-',
+        'Bitcoin (BTC)': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'
+    };
+    document.getElementById('deposit-address').innerText = addrs[network] || 'TQ...GENERIC_ADDR';
+    document.getElementById('deposit-details').style.display = 'block';
+}
+
+function confirmDeposit() {
+    notify('✅ Deposit request sent! Balance will update after verification.', true);
+    // In real app, call NOWPayments IPN or check balance via API
+    setTimeout(() => showView('home'), 2000);
+}
+
+function processOrder() {
+    // Deduct balance
+    state.user.balance -= state.selectedPlan.price;
+    updateWalletDisplay();
+    
+    // Add to orders
+    const order = {
+        id: Math.floor(Math.random()*10000),
+        item: state.selectedPlan.name,
+        price: state.selectedPlan.price,
+        status: 'Delivered',
+        date: new Date().toLocaleDateString()
+    };
+    state.orders.unshift(order);
+    
+    notify('🛒 Purchase Successful!', true);
+    setTimeout(() => {
+        showView('orders');
+        renderOrders();
+    }, 1000);
+}
+
+function renderOrders() {
+    const list = document.getElementById('orders-list');
+    list.innerHTML = state.orders.length ? state.orders.map(o => `
+        <div class="tool-card" style="margin-bottom: 12px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h4 style="margin-bottom: 4px;">${o.item}</h4>
+                    <p style="font-size: 12px; color: var(--text-dim);">Order #${o.id} • ${o.date}</p>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 800; font-size: 16px;">$${o.price}</div>
+                    <div style="font-size: 12px; color: #10b981; font-weight: 700;">${o.status}</div>
+                </div>
+            </div>
+        </div>
+    `).join('') : '<div style="text-align: center; padding: 50px; color: var(--text-dim);">No orders found.</div>';
+}
+
 function renderTools() {
     const list = document.getElementById('tools-list');
     list.innerHTML = state.tools.map(tool => `
-        <div class="tool-card" onclick="openCheckout('${tool.name}', ${tool.price})">
+        <div class="tool-card" onclick="checkAccess('${tool.name}', ${tool.price})">
             <div class="tool-header">
                 <div class="tool-icon">${tool.icon}</div>
                 <div class="tool-title">
@@ -132,31 +182,16 @@ function renderTools() {
     `).join('');
 }
 
-function openCheckout(name, price) {
-    state.selectedPlan = { name, price };
-    document.getElementById('checkout-item-name').innerText = name;
-    document.getElementById('checkout-total').innerText = `$${price}`;
-    document.getElementById('payment-details').style.display = 'none';
-    showView('checkout');
-}
-
-function selectNetwork(network) {
-    state.selectedNetwork = network;
-    document.querySelectorAll('.net-btn').forEach(btn => btn.classList.toggle('selected', btn.innerText === network));
-    const mockAddresses = { 'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-', 'Bitcoin (BTC)': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh' };
-    document.getElementById('pay-amount').innerText = `$${state.selectedPlan.price}`;
-    document.getElementById('pay-network').innerText = network;
-    document.getElementById('wallet-address').innerText = mockAddresses[network] || 'TQ...WALLET_ADDR';
-    document.getElementById('payment-details').style.display = 'block';
-}
-
 function copyAddress() {
-    navigator.clipboard.writeText(document.getElementById('wallet-address').innerText).then(() => notify('📋 Address copied!', true));
+    const addr = document.getElementById('deposit-address').innerText;
+    navigator.clipboard.writeText(addr).then(() => notify('📋 Address copied!', true));
 }
 
-function confirmPayment() {
-    notify('✅ Payment confirmed! Your order is being verified.', true);
-    setTimeout(() => showView('home'), 2000);
+// Init
+const session = localStorage.getItem('session_user');
+if (session) {
+    state.user = JSON.parse(session);
+    showMainApp();
 }
-
-init();
+renderTools();
+lucide.createIcons();

@@ -76,7 +76,11 @@ body {
 .price-tag { font-weight: 800; font-size: 22px; }
 .get-access-btn { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 14px; font-weight: 700; font-size: 15px; }
 
-/* Checkout UI */
+/* UI Components */
+.back-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); color: white; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.view-header { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; }
+.view-header h2 { font-size: 26px; font-weight: 800; }
+
 .checkout-header { display: flex; align-items: center; gap: 15px; margin-bottom: 40px; }
 .network-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 30px 0; }
 .net-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); padding: 18px; border-radius: 14px; text-align: center; cursor: pointer; font-weight: 600; }

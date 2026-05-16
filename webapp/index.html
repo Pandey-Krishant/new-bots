@@ -99,9 +99,19 @@
                         <div class="net-btn" onclick="selectDeposit('Bitcoin (BTC)')">Bitcoin (BTC)</div>
                     </div>
 
-                    <div id="deposit-details" style="display: none; margin-top: 30px; animation: slideUp 0.3s ease;">
+                    <div id="deposit-details" style="display: none; margin-top: 30px;">
+                        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 15px; border-radius: 14px; margin-bottom: 20px; text-align: left;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="font-size: 12px; color: var(--text-dim);">Transaction ID:</span>
+                                <span id="display-txid" style="font-family: monospace; font-weight: 700; color: var(--primary);">Generating...</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="font-size: 12px; color: var(--text-dim);">Status:</span>
+                                <span style="font-size: 12px; font-weight: 700; color: #f59e0b;">Awaiting Payment</span>
+                            </div>
+                        </div>
                         <div class="alert" style="background: rgba(139, 92, 246, 0.1); border-color: var(--primary); color: white;">
-                            Send exactly <span id="deposit-pay-amount" style="font-weight: 800;"></span> to the address below:
+                            Send exactly <span id="deposit-pay-amount" style="font-weight: 800;"></span> to:
                         </div>
                         <div class="address-box" onclick="copyAddress()">
                             <code id="deposit-address"></code>

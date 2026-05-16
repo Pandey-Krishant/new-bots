@@ -8,6 +8,7 @@ const state = {
     currentView: 'home',
     selectedPlan: null,
     selectedNetwork: null,
+    currentTransaction: null,
     tools: [
         { id: 1, name: 'ChatGPT Pro', brand: 'by OpenAI', price: 19.99, icon: '🤖', desc: 'Unlock GPT-4o, advanced data analysis, and private workspace.' },
         { id: 2, name: 'Midjourney', brand: 'Design', price: 29.99, icon: '🎨', desc: 'The world\'s best AI image generator. High-speed GPU hours included.' },
@@ -30,10 +31,7 @@ function notify(msg, isSuccess = false) {
 function showView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     const target = document.getElementById(`screen-${viewId}`);
-    if (target) {
-        target.classList.add('active');
-        tg.HapticFeedback.selectionChanged();
-    }
+    if (target) target.classList.add('active');
     
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     const navItem = document.querySelector(`.nav-item[onclick*="${viewId}"]`);
@@ -42,23 +40,6 @@ function showView(viewId) {
 }
 
 // --- AUTH ---
-function toggleAuth(type) {
-    document.getElementById('form-login').style.display = type === 'register' ? 'none' : 'block';
-    document.getElementById('form-register').style.display = type === 'register' ? 'block' : 'none';
-}
-
-function handleRegister() {
-    const username = document.getElementById('reg-username').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const password = document.getElementById('reg-password').value.trim();
-    if (!username || !email || !password) { notify('All fields required!'); return; }
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    users.push({ username, email, password, balance: 0.00 });
-    localStorage.setItem('registered_users', JSON.stringify(users));
-    notify('✨ Registered! Please login.', true);
-    toggleAuth('login');
-}
-
 function handleLogin() {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value.trim();
@@ -86,60 +67,67 @@ function updateWalletDisplay() {
     }
 }
 
-// --- PURCHASE LOGIC ---
+// --- NOWPAYMENTS INTEGRATION ---
+async function selectDeposit(network) {
+    state.selectedNetwork = network;
+    document.querySelectorAll('.net-btn').forEach(btn => btn.classList.toggle('selected', btn.innerText === network));
+    
+    notify('🔄 Generating Transaction ID...');
+    
+    // In a real production app, you would fetch this from your bot/api.py
+    // Example: const response = await fetch('/create-payment', { method: 'POST', body: ... })
+    // For now, we simulate the NOWPayments response to show the UX
+    
+    const mockTxID = 'NP_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    state.currentTransaction = {
+        id: mockTxID,
+        network: network,
+        address: getNetworkAddress(network),
+        amount: state.selectedPlan.price || 19.99
+    };
+
+    document.getElementById('display-txid').innerText = state.currentTransaction.id;
+    document.getElementById('deposit-address').innerText = state.currentTransaction.address;
+    document.getElementById('deposit-pay-amount').innerText = `$${state.currentTransaction.amount}`;
+    document.getElementById('deposit-details').style.display = 'block';
+    
+    tg.HapticFeedback.impactOccurred('heavy');
+}
+
+function getNetworkAddress(network) {
+    const addrs = { 
+        'USDT (TRC-20)': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+        'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-',
+        'Bitcoin (BTC)': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'
+    };
+    return addrs[network] || '0x9999999999999999999999999999999999999999';
+}
+
+function confirmDeposit() {
+    notify('🚀 Transaction submitted! ID: ' + state.currentTransaction.id, true);
+    
+    // Simulate auto-verification
+    setTimeout(() => {
+        state.user.balance += state.currentTransaction.amount;
+        updateWalletDisplay();
+        localStorage.setItem('session_user', JSON.stringify(state.user));
+        notify('💰 Balance updated! Transaction Verified.', true);
+        showView('home');
+    }, 4000);
+}
+
+// --- UTILS ---
 function checkAccess(name, price) {
     state.selectedPlan = { name, price };
-    
     if (state.user && state.user.balance >= price) {
         document.getElementById('checkout-item-name').innerText = name;
         document.getElementById('checkout-total').innerText = `$${price}`;
         showView('checkout');
     } else {
-        // Insufficient Balance -> Show Enhanced Deposit/Payment Interface
         document.getElementById('pay-for-item').innerText = name;
         document.getElementById('pay-required-amount').innerText = `$${price}`;
-        document.getElementById('deposit-pay-amount').innerText = `$${price}`;
-        document.getElementById('deposit-details').style.display = 'none';
         showView('deposit');
-        notify('Top-up wallet to purchase!');
     }
-}
-
-function openGenericDeposit() {
-    state.selectedPlan = { name: 'Wallet Deposit', price: 0 };
-    document.getElementById('pay-for-item').innerText = 'Wallet Deposit';
-    document.getElementById('pay-required-amount').innerText = 'Any Amount';
-    document.getElementById('deposit-pay-amount').innerText = 'desired amount';
-    document.getElementById('deposit-details').style.display = 'none';
-    showView('deposit');
-}
-
-function selectDeposit(network) {
-    state.selectedNetwork = network;
-    document.querySelectorAll('.net-btn').forEach(btn => btn.classList.toggle('selected', btn.innerText === network));
-    const addrs = { 
-        'USDT (TRC-20)': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
-        'USDT (BEP-20)': '0x9999999999999999999999999999999999999999',
-        'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-',
-        'Bitcoin (BTC)': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'
-    };
-    document.getElementById('deposit-address').innerText = addrs[network] || 'TQ...WALLET_ADDR';
-    document.getElementById('deposit-details').style.display = 'block';
-    tg.HapticFeedback.impactOccurred('medium');
-}
-
-function confirmDeposit() {
-    notify('✅ Processing... Balance will update in 1-2 mins.', true);
-    
-    // SIMULATION: Add balance so user can test the flow
-    setTimeout(() => {
-        const amountToAdd = state.selectedPlan.price || 50.00;
-        state.user.balance += amountToAdd;
-        updateWalletDisplay();
-        localStorage.setItem('session_user', JSON.stringify(state.user));
-        notify(`💰 $${amountToAdd} added to your wallet!`, true);
-        showView('home');
-    }, 3000);
 }
 
 function processOrder() {
@@ -147,8 +135,8 @@ function processOrder() {
     updateWalletDisplay();
     localStorage.setItem('session_user', JSON.stringify(state.user));
     state.orders.unshift({ id: Math.floor(Math.random()*10000), item: state.selectedPlan.name, price: state.selectedPlan.price, status: 'Delivered', date: new Date().toLocaleDateString() });
-    notify('🛒 Purchase Successful!', true);
-    setTimeout(() => { showView('orders'); renderOrders(); }, 800);
+    notify('🛒 Order Delivered!', true);
+    setTimeout(() => { showView('orders'); renderOrders(); }, 1000);
 }
 
 function renderOrders() {
@@ -156,7 +144,7 @@ function renderOrders() {
     list.innerHTML = state.orders.length ? state.orders.map(o => `
         <div class="tool-card" style="margin-bottom: 12px; padding: 20px; cursor: default;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div><h4 style="margin-bottom: 4px;">${o.item}</h4><p style="font-size: 11px; color: var(--text-dim);">Order #${o.id}</p></div>
+                <div><h4>${o.item}</h4><p style="font-size: 11px; color: var(--text-dim);">Order #${o.id}</p></div>
                 <div style="text-align: right;"><p style="font-weight: 800;">$${o.price}</p><p style="color: #10b981; font-size: 11px; font-weight: 700;">${o.status}</p></div>
             </div>
         </div>
@@ -181,7 +169,24 @@ function copyAddress() {
     navigator.clipboard.writeText(document.getElementById('deposit-address').innerText).then(() => notify('📋 Address copied!', true));
 }
 
-// Initialization
+function toggleAuth(type) {
+    document.getElementById('form-login').style.display = type === 'register' ? 'none' : 'block';
+    document.getElementById('form-register').style.display = type === 'register' ? 'block' : 'none';
+}
+
+function handleRegister() {
+    const username = document.getElementById('reg-username').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value.trim();
+    if (!username || !email || !password) return;
+    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+    users.push({ username, email, password, balance: 0.00 });
+    localStorage.setItem('registered_users', JSON.stringify(users));
+    notify('✨ Registered!', true);
+    toggleAuth('login');
+}
+
+// Init
 const session = localStorage.getItem('session_user');
 if (session) {
     state.user = JSON.parse(session);

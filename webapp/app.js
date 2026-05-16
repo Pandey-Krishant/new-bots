@@ -31,6 +31,18 @@ function notify(msg, isSuccess = false) {
     setTimeout(() => el.classList.remove('show'), 3000);
 }
 
+function addLog(username, action, details) {
+    const logs = JSON.parse(localStorage.getItem('system_logs') || '[]');
+    logs.unshift({ username, action, details, timestamp: new Date().toISOString() });
+    localStorage.setItem('system_logs', JSON.stringify(logs.slice(0, 100)));
+}
+
+function handleLogout() {
+    if (state.user) addLog(state.user.username, 'Logout', 'User signed out');
+    localStorage.removeItem('session_user');
+    location.reload();
+}
+
 function showView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     const target = document.getElementById(`screen-${viewId}`);
@@ -39,7 +51,29 @@ function showView(viewId) {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     const navItem = document.querySelector(`.nav-item[onclick*="${viewId}"]`);
     if (navItem) navItem.classList.add('active');
+    
+    if (viewId === 'admin') renderLogs();
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderLogs() {
+    const list = document.getElementById('admin-logs-list');
+    if (!list) return;
+    const logs = JSON.parse(localStorage.getItem('system_logs') || '[]');
+    if (logs.length === 0) {
+        list.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-dim);">No system logs yet.</div>`;
+        return;
+    }
+    list.innerHTML = logs.map(l => `
+        <div class="tool-card" style="padding: 20px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span style="color: var(--primary); font-weight: 800;">${l.action}</span>
+                <span style="font-size: 11px; color: var(--text-dim);">${new Date(l.timestamp).toLocaleTimeString()}</span>
+            </div>
+            <p style="font-size: 14px;"><strong>${l.username}</strong>: ${l.details}</p>
+        </div>
+    `).join('');
 }
 
 function toggleAuth(type) {
@@ -49,16 +83,20 @@ function toggleAuth(type) {
 
 function updateWalletDisplay() {
     if (state.user) {
-        const bal = `$${state.user.balance.toFixed(2)}`;
-        document.getElementById('home-balance').innerText = bal;
-        document.getElementById('display-balance').innerText = bal;
-        document.getElementById('home-username').innerText = `@${state.user.username}`;
+        const bal = `$${Number(state.user.balance).toFixed(2)}`;
+        const homeBal = document.getElementById('home-balance');
+        const dispBal = document.getElementById('display-balance');
+        const homeUser = document.getElementById('home-username');
+        if (homeBal) homeBal.innerText = bal;
+        if (dispBal) dispBal.innerText = bal;
+        if (homeUser) homeUser.innerText = `@${state.user.username}`;
     }
 }
 
 // --- RENDER (IMAGE MATCH) ---
 function renderTools() {
     const list = document.getElementById('tools-list');
+    if (!list) return;
     list.innerHTML = state.tools.map(tool => `
         <div class="tool-card" onclick="checkAccess('${tool.name}', ${tool.price})">
             <div class="tool-header">
@@ -80,8 +118,16 @@ function renderTools() {
 // --- FLOWS ---
 function checkAccess(name, price) {
     state.selectedPlan = { name, price };
-    document.getElementById('pay-required-amount').innerText = `$${price}`;
-    document.getElementById('deposit-pay-amount').innerText = `$${price}`;
+    const payAmt = document.getElementById('pay-required-amount');
+    if (payAmt) payAmt.innerText = `$${price}`;
+    document.getElementById('deposit-details').style.display = 'none';
+    showView('deposit');
+}
+
+function openGenericDeposit() {
+    state.selectedPlan = { name: 'Generic Topup', price: 0 };
+    const payAmt = document.getElementById('pay-required-amount');
+    if (payAmt) payAmt.innerText = 'Topup';
     document.getElementById('deposit-details').style.display = 'none';
     showView('deposit');
 }
@@ -90,17 +136,30 @@ function selectDeposit(network) {
     state.selectedNetwork = network;
     document.querySelectorAll('.net-btn').forEach(btn => btn.classList.toggle('selected', btn.innerText === network));
     const addr = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
-    document.getElementById('deposit-address').innerText = addr;
-    document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${addr}`;
+    const addrEl = document.getElementById('deposit-address');
+    const qrEl = document.getElementById('qr-image');
+    if (addrEl) addrEl.innerText = addr;
+    if (qrEl) qrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${addr}`;
     document.getElementById('deposit-details').style.display = 'block';
 }
 
 function confirmDeposit() {
     notify('🔄 Verifying payment...', true);
     setTimeout(() => {
-        state.user.balance += state.selectedPlan.price;
+        const amount = state.selectedPlan.price || 10.0; // Fallback for generic topup
+        state.user.balance = Number(state.user.balance) + amount;
         updateWalletDisplay();
+        
+        // Update user in registered_users list
+        const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+        const idx = users.findIndex(u => u.email === state.user.email);
+        if (idx !== -1) {
+            users[idx] = state.user;
+            localStorage.setItem('registered_users', JSON.stringify(users));
+        }
+
         localStorage.setItem('session_user', JSON.stringify(state.user));
+        addLog(state.user.username, 'Deposit', `Added $${amount.toFixed(2)} to wallet via ${state.selectedNetwork}`);
         notify('💰 Deposit Successful!', true);
         showView('home');
     }, 2000);
@@ -115,6 +174,7 @@ function handleLogin() {
     if (user) {
         state.user = user;
         localStorage.setItem('session_user', JSON.stringify(user));
+        addLog(user.username, 'Login', 'User logged in successfully');
         showMainApp();
     } else {
         notify('Invalid login!');
@@ -128,8 +188,11 @@ function handleRegister() {
     if (!user || !email || !pass) return notify('Fill all fields');
     
     const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+    if (users.find(u => u.email === email)) return notify('Email already exists');
+    
     users.push({ username: user, email, password: pass, balance: 0 });
     localStorage.setItem('registered_users', JSON.stringify(users));
+    addLog(user, 'Registration', 'New account created');
     notify('✨ Registered!', true);
     toggleAuth('login');
 }
@@ -139,6 +202,7 @@ function showMainApp() {
     document.getElementById('main-content').style.display = 'block';
     updateWalletDisplay();
     renderTools();
+    lucide.createIcons();
 }
 
 // Init

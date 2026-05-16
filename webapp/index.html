@@ -46,7 +46,10 @@
                 <div id="screen-home" class="view active">
                     <header class="hero">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 50px;">
-                            <span id="home-username" style="font-weight: 800; font-size: 20px;">@User</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span id="home-username" style="font-weight: 800; font-size: 20px;">@User</span>
+                                <i data-lucide="log-out" onclick="handleLogout()" style="width: 18px; color: var(--text-dim); cursor: pointer; opacity: 0.7;"></i>
+                            </div>
                             <div style="background: rgba(139, 92, 246, 0.15); border: 1px solid var(--primary); padding: 8px 20px; border-radius: 100px; display: flex; align-items: center; gap: 8px;">
                                 <i data-lucide="wallet" style="width: 16px; color: var(--primary);"></i>
                                 <span id="home-balance" style="font-weight: 800; font-size: 15px;">$0.00</span>
@@ -96,6 +99,13 @@
                     </div>
                 </div>
 
+                <div id="screen-admin" class="view">
+                    <h2 style="font-size: 30px; font-weight: 800; margin-bottom: 30px;">System Logs</h2>
+                    <div id="admin-logs-list" class="tool-grid">
+                        <!-- Logs will be rendered here -->
+                    </div>
+                </div>
+
                 <!-- DEPOSIT VIEW -->
                 <div id="screen-deposit" class="view">
                     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px;">
@@ -126,7 +136,7 @@
                 <a href="#" class="nav-item active" onclick="showView('home')"><i data-lucide="home"></i><span>Home</span></a>
                 <a href="#" class="nav-item" onclick="showView('wallet')"><i data-lucide="wallet"></i><span>Wallet</span></a>
                 <a href="#" class="nav-item" onclick="showView('orders')"><i data-lucide="clock"></i><span>Orders</span></a>
-                <a href="#" class="nav-item" onclick="showView('support')"><i data-lucide="shield-check"></i><span>Support</span></a>
+                <a href="#" class="nav-item" onclick="showView('admin')"><i data-lucide="activity"></i><span>Logs</span></a>
             </nav>
         </div>
     </div>

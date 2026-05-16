@@ -156,7 +156,7 @@ def is_admin(user_id):
 
 # --- ENDPOINTS ---
 
-@app.post("/register")
+@app.post("/api/register")
 async def register(data: dict):
     try:
         email = data.get("email")
@@ -182,7 +182,7 @@ async def register(data: dict):
         print(f"REGISTER ERROR: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/login")
+@app.post("/api/login")
 async def login(data: dict):
     try:
         identifier = data.get("email")
@@ -208,14 +208,14 @@ async def login(data: dict):
         print(f"LOGIN ERROR: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Database connection failed or Internal error")
 
-@app.get("/me")
+@app.get("/api/me")
 async def get_me(request: Request):
     user = await get_current_user(request)
     user["_id"] = str(user["_id"])
     user["is_admin"] = is_admin(user["user_id"])
     return user
 
-@app.get("/plans")
+@app.get("/api/plans")
 async def get_plans():
     try:
         plans = await db.get_all_plans()
@@ -225,7 +225,7 @@ async def get_plans():
         print(f"PLANS ERROR: {e}")
         return []
 
-@app.post("/create-payment")
+@app.post("/api/create-payment")
 async def create_payment(request: Request):
     user = await get_current_user(request)
     data = await request.json()
@@ -240,14 +240,14 @@ async def create_payment(request: Request):
     }, headers={"x-api-key": NOWPAYMENTS_API_KEY, "Content-Type": "application/json"})
     return r.json()
 
-@app.get("/orders")
+@app.get("/api/orders")
 async def get_orders(request: Request):
     user = await get_current_user(request)
     orders = await db.get_user_orders(user["user_id"])
     for o in orders: o["_id"] = str(o["_id"])
     return orders
 
-@app.get("/admin/stats")
+@app.get("/api/admin/stats")
 async def get_admin_stats(request: Request):
     user = await get_current_user(request)
     if not is_admin(user["user_id"]): raise HTTPException(status_code=403)
@@ -259,7 +259,7 @@ async def get_admin_stats(request: Request):
     for l in logs: l["_id"] = str(l["_id"])
     return {"users": users, "orders": orders, "logs": logs}
 
-@app.post("/system-log")
+@app.post("/api/system-log")
 async def system_log(data: dict):
     username = data.get("username", "Unknown")
     action = data.get("action", "Activity")

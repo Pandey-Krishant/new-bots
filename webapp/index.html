@@ -13,21 +13,7 @@
 </head>
 <body>
     <div class="bg-glow"></div>
-    
-    <!-- Custom Notification -->
     <div id="notification" class="notification"></div>
-
-    <!-- Custom Confirm Modal -->
-    <div id="modal-overlay" class="modal-overlay">
-        <div class="modal">
-            <h3 id="modal-title">Confirm Action</h3>
-            <p id="modal-body">Are you sure?</p>
-            <div class="modal-actions">
-                <button class="modal-btn secondary" onclick="closeModal(false)">Cancel</button>
-                <button class="modal-btn primary" onclick="closeModal(true)">Confirm</button>
-            </div>
-        </div>
-    </div>
 
     <div id="app">
         <!-- AUTH SCREEN -->
@@ -65,67 +51,78 @@
                 <div id="screen-home" class="view active">
                     <header class="hero">
                         <div class="user-profile">
-                            <span id="display-username">@User</span>
+                            <span id="display-username" style="font-weight: 700; color: var(--primary);">@User</span>
                             <button class="logout-btn" onclick="handleLogout()"><i data-lucide="log-out"></i></button>
                         </div>
                         <h1>Premium AI Store</h1>
-                        <p>Get instant access to the world's most powerful AI tools at unbeatable prices.</p>
+                        <p>Get instant access to the world's most powerful AI tools at unbeatable prices. Secure crypto payments & 24/7 delivery.</p>
                     </header>
+
                     <section class="featured">
                         <div class="featured-card">
                             <div class="featured-icon">🚀</div>
                             <div class="featured-info">
-                                <span class="badge">Hot Deal</span>
+                                <span style="color: var(--secondary); font-weight: 700; font-size: 12px; text-transform: uppercase;">Limited Time Offer</span>
                                 <h2>ChatGPT Plus (Private)</h2>
-                                <div class="featured-price">$19.99</div>
+                                <div class="featured-price">$19.99 <span style="font-size: 14px; font-weight: 400; color: var(--text-dim);">/ Month</span></div>
                             </div>
-                            <button class="buy-btn" onclick="openCheckout('ChatGPT Plus', 19.99)">Buy Now</button>
+                            <button class="buy-btn" style="margin-left: auto; padding: 15px 30px;" onclick="openCheckout('ChatGPT Plus', 19.99)">Buy Now</button>
                         </div>
                     </section>
+
                     <section class="tools">
-                        <div class="section-header"><h3>AI Subscriptions</h3></div>
-                        <div class="tool-grid" id="tools-list"></div>
+                        <div class="section-header" style="margin-bottom: 30px;">
+                            <h3 style="font-size: 24px; font-weight: 700;">All AI Subscriptions</h3>
+                        </div>
+                        <div class="tool-grid" id="tools-list">
+                            <!-- Populated by JS -->
+                        </div>
                     </section>
                 </div>
 
                 <!-- CHECKOUT SCREEN -->
                 <div id="screen-checkout" class="view">
-                    <div class="checkout-header">
-                        <button class="back-btn" onclick="showView('home')"><i data-lucide="chevron-left"></i></button>
-                        <h2>🛒 Order Summary</h2>
+                    <div class="checkout-header" style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px;">
+                        <button onclick="showView('home')" style="background: none; border: none; color: white;"><i data-lucide="chevron-left"></i></button>
+                        <h2 style="font-size: 24px;">Order Summary</h2>
                     </div>
-                    <div class="summary-card">
-                        <div class="summary-item"><span>Item:</span> <span id="checkout-item-name">Plan Name</span></div>
-                        <div class="summary-total">Total Amount: <span id="checkout-total">$0.00</span></div>
+                    <div class="tool-card" style="margin-bottom: 30px; padding: 30px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span>Item:</span> <span id="checkout-item-name" style="font-weight: 700;">Plan Name</span>
+                        </div>
+                        <div style="font-size: 24px; font-weight: 800;">Total: <span id="checkout-total">$0.00</span></div>
                     </div>
-                    <p class="instruction-text">Please select your preferred cryptocurrency/network for payment:</p>
-                    <div class="network-grid">
-                        <div class="net-btn" onclick="selectNetwork('USDT (TRC-20)')">USDT (TRC-20)</div>
-                        <div class="net-btn" onclick="selectNetwork('USDT (BEP-20)')">USDT (BEP-20)</div>
-                        <div class="net-btn" onclick="selectNetwork('USDT (ERC-20)')">USDT (ERC-20)</div>
-                        <div class="net-btn" onclick="selectNetwork('TON Coin')">TON Coin</div>
-                        <div class="net-btn" onclick="selectNetwork('Bitcoin (BTC)')">Bitcoin (BTC)</div>
+                    <p style="color: var(--text-dim); margin-bottom: 15px;">Select payment network:</p>
+                    <div class="network-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px;">
+                        <div class="net-btn" onclick="selectNetwork('USDT (TRC-20)')" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; text-align: center; cursor: pointer;">USDT (TRC-20)</div>
+                        <div class="net-btn" onclick="selectNetwork('USDT (BEP-20)')" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; text-align: center; cursor: pointer;">USDT (BEP-20)</div>
+                        <div class="net-btn" onclick="selectNetwork('TON Coin')" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; text-align: center; cursor: pointer;">TON Coin</div>
+                        <div class="net-btn" onclick="selectNetwork('Bitcoin (BTC)')" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; text-align: center; cursor: pointer;">Bitcoin (BTC)</div>
                     </div>
-                    <div id="payment-details" style="display: none; margin-top: 24px;">
-                        <div class="alert warning">⚠️ Send exactly <span id="pay-amount"></span> worth of <span id="pay-network"></span>:</div>
-                        <div class="address-box" onclick="copyAddress()"><code id="wallet-address"></code><i data-lucide="copy"></i></div>
-                        <p class="tap-hint">(Tap to copy)</p>
-                        <button class="primary-btn" onclick="confirmPayment()">✅ I Have Paid</button>
+                    <div id="payment-details" style="display: none;">
+                        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; padding: 20px; border-radius: 15px; margin-bottom: 20px; font-size: 14px;">
+                            ⚠️ Send exactly <span id="pay-amount" style="font-weight: 700;"></span> to:
+                            <div class="address-box" onclick="copyAddress()" style="background: #000; padding: 15px; border-radius: 10px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px dashed #333; cursor: pointer;">
+                                <code id="wallet-address" style="font-family: monospace; color: var(--secondary); font-size: 12px; word-break: break-all;"></code>
+                                <i data-lucide="copy" style="width: 16px;"></i>
+                            </div>
+                        </div>
+                        <button class="primary-btn" onclick="confirmPayment()">Confirm Payment</button>
                     </div>
                 </div>
 
                 <!-- ORDERS SCREEN -->
                 <div id="screen-orders" class="view">
-                    <div class="view-header"><h2>📦 My Orders</h2></div>
-                    <div class="orders-list" id="orders-list"></div>
+                    <div style="margin-bottom: 30px;"><h2>📦 My Orders</h2></div>
+                    <div id="orders-list"></div>
                 </div>
 
                 <!-- WALLET SCREEN -->
                 <div id="screen-wallet" class="view">
-                    <div class="view-header"><h2>💳 My Wallet</h2></div>
-                    <div class="wallet-card">
-                        <p>Total Balance</p>
-                        <h3 id="display-balance">$0.00</h3>
+                    <div style="margin-bottom: 30px;"><h2>💳 My Wallet</h2></div>
+                    <div class="tool-card" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; padding: 40px; text-align: center;">
+                        <p style="color: rgba(255,255,255,0.8);">Available Balance</p>
+                        <h3 id="display-balance" style="font-size: 48px; font-weight: 900; color: white;">$0.00</h3>
                     </div>
                 </div>
             </div>
@@ -135,6 +132,7 @@
                 <a href="#" class="nav-item active" onclick="showView('home')"><i data-lucide="home"></i><span>Home</span></a>
                 <a href="#" class="nav-item" onclick="showView('wallet')"><i data-lucide="wallet"></i><span>Wallet</span></a>
                 <a href="#" class="nav-item" onclick="showView('orders')"><i data-lucide="clock"></i><span>Orders</span></a>
+                <a href="#" class="nav-item" onclick="showView('support')"><i data-lucide="shield-check"></i><span>Support</span></a>
             </nav>
         </div>
     </div>

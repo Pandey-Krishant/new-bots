@@ -1,170 +1,111 @@
-import logging, asyncio
+import logging
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
-from config import ADMIN_BOT_TOKEN, ADMIN_IDS, DIVIDER, SUCCESS_EMOJI, PENDING_EMOJI, DENIED_EMOJI
-from database import db
-import bson
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, ConversationHandler
+from config import ADMIN_BOT_TOKEN, ADMIN_CHAT_ID
+from database import Database
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-def is_admin(user_id):
-    return user_id in ADMIN_IDS
+db = Database()
+# Blueprint States
+ADD_NAME, ADD_PRICE, ADD_DESC, ADD_IMAGE = range(4)
 
-async def admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    if not is_admin(user.id):
-        await update.message.reply_text("❌ Access Denied. You are not an authorized admin.")
-        return
+async def start_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if str(update.effective_user.id) != str(ADMIN_CHAT_ID): return
+    await update.message.reply_text(
+        "<b>🛡 Welcome to Admin Control Bot</b>\n\n"
+        "Commands:\n"
+        "• /addproduct - Add new tool to store\n"
+        "• /removeproduct Name - Delete a tool",
+        parse_mode='HTML'
+    )
 
-    text = (
-        f"<b>🛡 Admin Control Panel</b>\n"
-        f"{DIVIDER}\n"
-        f"Welcome, Admin. Select an option below to manage the store:"
+# --- ADD PRODUCT CONVERSATION ---
+async def start_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if str(update.effective_user.id) != str(ADMIN_CHAT_ID): return
+    blueprint = (
+        "<b>🛠 Product Addition Blueprint</b>\n\n"
+        "1️⃣ <b>Name:</b> Enter Tool Name\n"
+        "2️⃣ <b>Price:</b> Numbers only\n"
+        "3️⃣ <b>Description:</b> Tool details\n"
+        "4️⃣ <b>Image:</b> Send a Photo\n\n"
+        "<b>Step 1: Enter Product Name:</b>"
+    )
+    await update.message.reply_text(blueprint, parse_mode='HTML')
+    return ADD_NAME
+
+async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data['p_name'] = update.message.text
+    await update.message.reply_text("💰 <b>Step 2: Enter Price:</b>", parse_mode='HTML')
+    return ADD_PRICE
+
+async def get_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data['p_price'] = update.message.text
+    await update.message.reply_text("📝 <b>Step 3: Enter Description:</b>", parse_mode='HTML')
+    return ADD_DESC
+
+async def get_desc(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data['p_desc'] = update.message.text
+    await update.message.reply_text("🖼 <b>Step 4: Send Product Image (Photo):</b>", parse_mode='HTML')
+    return ADD_IMAGE
+
+async def get_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    image_url = None
+    if update.message.photo:
+        file = await context.bot.get_file(update.message.photo[-1].file_id)
+        image_url = file.file_path
+    
+    await db.add_plan(
+        context.user_data['p_name'],
+        context.user_data['p_price'],
+        context.user_data['p_desc'],
+        image_url=image_url
     )
     
-    keyboard = [
-        [InlineKeyboardButton("📦 Manage Orders", callback_data="admin_orders")],
-        [InlineKeyboardButton("🤖 Manage Plans", callback_data="admin_plans")],
-        [InlineKeyboardButton("💳 Manage Wallets", callback_data="admin_wallets")],
-        [InlineKeyboardButton("👤 User Search", callback_data="admin_users")]
-    ]
-    
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    if update.callback_query:
-        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode='HTML')
-    else:
-        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='HTML')
+    await update.message.reply_text("✅ <b>Product Added & Live!</b>", parse_mode='HTML')
+    return ConversationHandler.END
 
-async def manage_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    # Only show pending orders for management
-    orders = await db.orders.find({"status": "Pending"}).to_list(length=20)
-    
-    if not orders:
-        text = "✅ No pending orders found."
-        keyboard = [[InlineKeyboardButton("🏠 Back to Admin", callback_data="admin_home")]]
-    else:
-        text = f"<b>{PENDING_EMOJI} Pending Orders</b>\n{DIVIDER}\n"
-        keyboard = []
-        for order in orders:
-            keyboard.append([InlineKeyboardButton(f"Order #{str(order['_id'])[-6:]} | ${order['total_price']}", callback_data=f"view_order_{order['_id']}")])
-        keyboard.append([InlineKeyboardButton("🏠 Back to Admin", callback_data="admin_home")])
-    
-    await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='HTML')
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("❌ Cancelled.")
+    return ConversationHandler.END
 
-async def view_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    order_id_str = query.data.split("_")[2]
-    order = await db.orders.find_one({"_id": bson.ObjectId(order_id_str)})
-    
-    if not order:
-        await query.edit_message_text("❌ Order not found.")
+# --- REMOVE PRODUCT ---
+async def remove_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if str(update.effective_user.id) != str(ADMIN_CHAT_ID): return
+    name = " ".join(context.args).strip()
+    if not name:
+        await update.message.reply_text("❌ Use: /removeproduct Name")
         return
-
-    text = (
-        f"<b>📄 Order Details</b>\n"
-        f"{DIVIDER}\n"
-        f"<b>User ID:</b> <code>{order['user_id']}</code> (@{order['username']})\n"
-        f"<b>Plan:</b> {order['plan_name']} x{order['quantity']}\n"
-        f"<b>Total:</b> ${order['total_price']}\n"
-        f"<b>Network:</b> {order['crypto_network']}\n"
-        f"<b>TxID:</b> <code>{order['txid']}</code>\n"
-        f"<b>Time:</b> {order['timestamp'].strftime('%Y-%m-%d %H:%M')}\n"
-        f"{DIVIDER}\n"
-        f"Select Action:"
-    )
-    
-    keyboard = [
-        [InlineKeyboardButton("✅ Deliver Plan", callback_data=f"order_action_Delivered_{order['_id']}")],
-        [InlineKeyboardButton("❌ Deny Order", callback_data=f"order_action_Denied_{order['_id']}")],
-        [InlineKeyboardButton("🔙 Back to Orders", callback_data="admin_orders")]
-    ]
-    
-    await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='HTML')
-
-async def process_order_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    # format: order_action_Status_ID
-    parts = query.data.split("_")
-    status = parts[2]
-    order_id = bson.ObjectId(parts[3])
-    
-    await db.orders.update_one({"_id": order_id}, {"$set": {"status": status}})
-    
-    await query.edit_message_text(f"✅ Order status updated to: <b>{status}</b>", parse_mode='HTML', 
-                                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back to Orders", callback_data="admin_orders")]]))
-
-async def manage_wallets(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    wallets = await db.get_all_wallets()
-    text = f"<b>💳 Manage Crypto Wallets</b>\n{DIVIDER}\n"
-    keyboard = []
-    for wallet in wallets:
-        text += f"• <b>{wallet['network']}:</b>\n<code>{wallet['address']}</code>\n\n"
-        keyboard.append([InlineKeyboardButton(f"Edit {wallet['network']}", callback_data=f"edit_wallet_{wallet['network']}")])
-    
-    keyboard.append([InlineKeyboardButton("🏠 Back to Admin", callback_data="admin_home")])
-    await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='HTML')
-
-async def edit_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    network = query.data.replace("edit_wallet_", "")
-    context.user_data['edit_wallet_network'] = network
-    context.user_data['state'] = 'AWAITING_WALLET_ADDRESS'
-    
-    await query.edit_message_text(f"Please send the new address for <b>{network}</b>:", parse_mode='HTML')
-
-async def handle_admin_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if not is_admin(user_id):
-        return
-
-    state = context.user_data.get('state')
-    
-    if state == 'AWAITING_WALLET_ADDRESS':
-        new_address = update.message.text
-        network = context.user_data['edit_wallet_network']
-        
-        await db.wallets.update_one({"network": network}, {"$set": {"address": new_address}})
-        context.user_data['state'] = None
-        
-        await update.message.reply_text(f"✅ Address for <b>{network}</b> updated successfully!", parse_mode='HTML',
-                                       reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("💳 Back to Wallets", callback_data="admin_wallets")]]))
+    await db.delete_plan(name)
+    await update.message.reply_text(f"🗑 <b>Deleted:</b> {name}", parse_mode='HTML')
 
 async def main():
-    application = ApplicationBuilder().token(ADMIN_BOT_TOKEN).build()
+    application = Application.builder().token(ADMIN_BOT_TOKEN).build()
     
-    application.add_handler(CommandHandler("start", admin_start))
-    application.add_handler(CallbackQueryHandler(admin_start, pattern="^admin_home$"))
-    application.add_handler(CallbackQueryHandler(manage_orders, pattern="^admin_orders$"))
-    application.add_handler(CallbackQueryHandler(view_order, pattern="^view_order_"))
-    application.add_handler(CallbackQueryHandler(process_order_action, pattern="^order_action_"))
-    application.add_handler(CallbackQueryHandler(manage_wallets, pattern="^admin_wallets$"))
-    application.add_handler(CallbackQueryHandler(edit_wallet, pattern="^edit_wallet_"))
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("addproduct", start_add)],
+        states={
+            ADD_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_name)],
+            ADD_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_price)],
+            ADD_DESC: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_desc)],
+            ADD_IMAGE: [MessageHandler(filters.PHOTO | filters.Regex('^skip$'), get_image)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)]
+    )
     
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_admin_text))
+    application.add_handler(conv_handler)
+    application.add_handler(CommandHandler("start", start_admin))
+    application.add_handler(CommandHandler("removeproduct", remove_product))
     
-    print("Admin Bot is running...")
+    print("Admin Control Bot (2nd Bot) is running...")
     async with application:
         await application.initialize()
         await application.start()
         await application.updater.start_polling()
-        # Keep the bot running
-        await asyncio.Event().wait()
+        while True:
+            await asyncio.sleep(3600)
 
-if __name__ == '__main__':
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        pass
+if __name__ == "__main__":
+    asyncio.run(main())

@@ -292,24 +292,24 @@ function renderAdminTools() {
     const list = document.getElementById('admin-tools-list');
     if (!list) return;
     
-    if (state.tools.length === 0) {
+    if (!state.tools || state.tools.length === 0) {
         list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-dim);">No products in inventory.</div>';
         return;
     }
 
     list.innerHTML = state.tools.map(tool => `
-        <div class="tool-card" style="padding: 15px; margin-bottom: 10px; background: rgba(0,0,0,0.3);">
+        <div class="tool-card" style="padding: 15px; margin-bottom: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border);">
             <div style="display: flex; gap: 15px; align-items: center;">
-                <div style="width: 50px; height: 50px; border-radius: 8px; overflow: hidden; background: #000; border: 1px solid var(--glass-border);">
-                    <img src="${tool.image_url || ''}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://via.placeholder.com/50?text=AI'">
+                <div class="inventory-img-container">
+                    <img src="${tool.image_url || ''}" class="inventory-img">
                 </div>
                 <div style="flex-grow: 1;">
-                    <h4 style="font-size: 15px; font-weight: 700;">${tool.name}</h4>
+                    <h4 style="font-size: 15px; font-weight: 700; color: white;">${tool.name}</h4>
                     <p style="font-size: 12px; color: var(--primary); font-weight: 800;">$${tool.price}</p>
                 </div>
-                <div style="display: flex; gap: 8px;">
-                    <button onclick="editProduct('${tool._id}')" style="background: rgba(139, 92, 246, 0.1); color: var(--primary); border: 1px solid var(--primary); padding: 8px; border-radius: 10px; cursor: pointer;"><i data-lucide="edit-3" style="width: 14px;"></i></button>
-                    <button onclick="deleteProduct('${tool.name}')" style="background: rgba(239, 68, 68, 0.1); color: #ff6b6b; border: 1px solid #ff6b6b; padding: 8px; border-radius: 10px; cursor: pointer;"><i data-lucide="trash-2" style="width: 14px;"></i></button>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="editProduct('${tool._id}')" class="admin-action-btn edit"><i data-lucide="edit-3"></i></button>
+                    <button onclick="deleteProduct('${tool.name}')" class="admin-action-btn delete"><i data-lucide="trash-2"></i></button>
                 </div>
             </div>
         </div>

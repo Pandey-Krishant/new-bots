@@ -62,13 +62,15 @@ function renderTools() {
     list.innerHTML = state.tools.map(tool => `
         <div class="tool-card" onclick="checkAccess('${tool.name}', ${tool.price})">
             <div class="tool-header">
-                <div class="tool-icon">${tool.icon}</div>
+                <div class="tool-icon">
+                    ${tool.image_url ? `<img src="${tool.image_url}" style="width: 100%; height: 100%; border-radius: 12px; object-fit: cover;">` : tool.icon || '🤖'}
+                </div>
                 <div class="tool-title">
                     <h4>${tool.name}</h4>
-                    <p>${tool.brand}</p>
+                    <p>${tool.brand || 'Premium Tool'}</p>
                 </div>
             </div>
-            <p class="tool-desc">${tool.desc}</p>
+            <p class="tool-desc">${tool.description || tool.desc || ''}</p>
             <div class="tool-footer">
                 <div class="price-tag">$${tool.price}</div>
                 <button class="get-access-btn">Get Access</button>
@@ -78,12 +80,26 @@ function renderTools() {
 }
 
 // --- FLOWS ---
-function checkAccess(name, price) {
+async function checkAccess(name, price) {
     state.selectedPlan = { name, price };
-    document.getElementById('pay-required-amount').innerText = `$${price}`;
-    document.getElementById('deposit-pay-amount').innerText = `$${price}`;
-    document.getElementById('deposit-details').style.display = 'none';
-    showView('deposit');
+    
+    // REDIRECT TO NOWPAYMENTS
+    notify('🔄 Generating Secure Invoice...', true);
+    try {
+        const response = await fetch('http://localhost:8000/create-invoice', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, price, user_email: state.user.email })
+        });
+        const data = await response.json();
+        if (data.url) {
+            tg.openLink(data.url);
+        } else {
+            notify('Checkout error, try later');
+        }
+    } catch (e) {
+        notify('API Connection Error');
+    }
 }
 
 function selectDeposit(network) {

@@ -46,7 +46,10 @@
                 <div id="screen-home" class="view active">
                     <header class="hero">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 50px;">
-                            <span id="home-username" style="font-weight: 800; font-size: 20px;">@User</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span id="home-username" style="font-weight: 800; font-size: 20px;">@User</span>
+                                <button onclick="handleLogout()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ff6b6b; padding: 6px; border-radius: 10px; cursor: pointer; display: flex; align-items: center;"><i data-lucide="log-out" style="width: 16px;"></i></button>
+                            </div>
                             <div style="background: rgba(139, 92, 246, 0.15); border: 1px solid var(--primary); padding: 8px 20px; border-radius: 100px; display: flex; align-items: center; gap: 8px;">
                                 <i data-lucide="wallet" style="width: 16px; color: var(--primary);"></i>
                                 <span id="home-balance" style="font-weight: 800; font-size: 15px;">$0.00</span>

@@ -34,8 +34,23 @@ class Database:
         await self.users.update_one({"user_id": user_id}, {"$inc": {"balance": amount}})
 
     # Plan Methods
+    async def add_plan(self, name, price, description, icon="🤖", image_url=None):
+        plan = {
+            "name": name,
+            "price": float(price),
+            "description": description,
+            "icon": icon,
+            "image_url": image_url,
+            "is_active": True,
+            "created_at": datetime.now()
+        }
+        return await self.plans.insert_one(plan)
+
     async def get_all_plans(self):
         return await self.plans.find({"is_active": True}).to_list(length=100)
+
+    async def delete_plan(self, name):
+        return await self.plans.delete_one({"name": name})
 
     async def get_plan_by_id(self, plan_id):
         return await self.plans.find_one({"_id": plan_id})

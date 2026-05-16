@@ -28,7 +28,6 @@ function notify(msg, isSuccess = false) {
 }
 
 function showView(viewId) {
-    console.log("Switching to view:", viewId);
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     const target = document.getElementById(`screen-${viewId}`);
     if (target) {
@@ -52,9 +51,7 @@ function handleRegister() {
     const username = document.getElementById('reg-username').value.trim();
     const email = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value.trim();
-
     if (!username || !email || !password) { notify('All fields required!'); return; }
-
     const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
     users.push({ username, email, password, balance: 0.00 });
     localStorage.setItem('registered_users', JSON.stringify(users));
@@ -65,10 +62,8 @@ function handleRegister() {
 function handleLogin() {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value.trim();
-
     const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
     const user = users.find(u => u.email === email && u.password === password);
-
     if (user) {
         state.user = user;
         localStorage.setItem('session_user', JSON.stringify(user));
@@ -93,7 +88,6 @@ function updateWalletDisplay() {
 
 // --- PURCHASE LOGIC ---
 function checkAccess(name, price) {
-    console.log("Checking access for:", name, price);
     state.selectedPlan = { name, price };
     
     if (state.user && state.user.balance >= price) {
@@ -101,9 +95,23 @@ function checkAccess(name, price) {
         document.getElementById('checkout-total').innerText = `$${price}`;
         showView('checkout');
     } else {
+        // Insufficient Balance -> Show Enhanced Deposit/Payment Interface
+        document.getElementById('pay-for-item').innerText = name;
+        document.getElementById('pay-required-amount').innerText = `$${price}`;
+        document.getElementById('deposit-pay-amount').innerText = `$${price}`;
+        document.getElementById('deposit-details').style.display = 'none';
         showView('deposit');
-        notify('Insufficient funds! Please add money.');
+        notify('Top-up wallet to purchase!');
     }
+}
+
+function openGenericDeposit() {
+    state.selectedPlan = { name: 'Wallet Deposit', price: 0 };
+    document.getElementById('pay-for-item').innerText = 'Wallet Deposit';
+    document.getElementById('pay-required-amount').innerText = 'Any Amount';
+    document.getElementById('deposit-pay-amount').innerText = 'desired amount';
+    document.getElementById('deposit-details').style.display = 'none';
+    showView('deposit');
 }
 
 function selectDeposit(network) {
@@ -111,21 +119,33 @@ function selectDeposit(network) {
     document.querySelectorAll('.net-btn').forEach(btn => btn.classList.toggle('selected', btn.innerText === network));
     const addrs = { 
         'USDT (TRC-20)': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+        'USDT (BEP-20)': '0x9999999999999999999999999999999999999999',
         'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-',
         'Bitcoin (BTC)': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'
     };
     document.getElementById('deposit-address').innerText = addrs[network] || 'TQ...WALLET_ADDR';
     document.getElementById('deposit-details').style.display = 'block';
+    tg.HapticFeedback.impactOccurred('medium');
 }
 
 function confirmDeposit() {
-    notify('✅ Deposit pending verification.', true);
-    setTimeout(() => showView('home'), 1500);
+    notify('✅ Processing... Balance will update in 1-2 mins.', true);
+    
+    // SIMULATION: Add balance so user can test the flow
+    setTimeout(() => {
+        const amountToAdd = state.selectedPlan.price || 50.00;
+        state.user.balance += amountToAdd;
+        updateWalletDisplay();
+        localStorage.setItem('session_user', JSON.stringify(state.user));
+        notify(`💰 $${amountToAdd} added to your wallet!`, true);
+        showView('home');
+    }, 3000);
 }
 
 function processOrder() {
     state.user.balance -= state.selectedPlan.price;
     updateWalletDisplay();
+    localStorage.setItem('session_user', JSON.stringify(state.user));
     state.orders.unshift({ id: Math.floor(Math.random()*10000), item: state.selectedPlan.name, price: state.selectedPlan.price, status: 'Delivered', date: new Date().toLocaleDateString() });
     notify('🛒 Purchase Successful!', true);
     setTimeout(() => { showView('orders'); renderOrders(); }, 800);

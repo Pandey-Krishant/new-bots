@@ -76,32 +76,39 @@
                         </div>
                         <div style="font-size: 24px; font-weight: 800;">Total: <span id="checkout-total"></span></div>
                     </div>
-                    <button class="primary-btn" onclick="processOrder()">Complete Purchase</button>
+                    <button class="primary-btn" onclick="processOrder()">✅ Complete Purchase</button>
                 </div>
 
-                <!-- DEPOSIT / ADD FUNDS VIEW -->
+                <!-- DEPOSIT / PAYMENT INTERFACE -->
                 <div id="screen-deposit" class="view">
                     <div class="view-header">
                         <button onclick="showView('home')" class="back-btn"><i data-lucide="chevron-left"></i></button>
-                        <h2>Add Funds to Wallet</h2>
+                        <h2>Secure Payment</h2>
                     </div>
-                    <div class="alert warning">
-                        Insufficient balance to purchase this plan. Please add funds below.
+                    <div class="tool-card" style="margin-bottom: 24px; border: 1px solid var(--primary); padding: 20px;">
+                        <p style="font-size: 13px; color: var(--text-dim);">Payment for:</p>
+                        <h3 id="pay-for-item">Wallet Deposit</h3>
+                        <div style="font-size: 20px; font-weight: 800; color: var(--primary); margin-top: 5px;">Required: <span id="pay-required-amount">$0.00</span></div>
                     </div>
-                    <p style="color: var(--text-dim); margin-bottom: 20px;">Select deposit network:</p>
+                    
+                    <p style="color: var(--text-dim); margin-bottom: 15px; font-size: 14px;">Choose crypto network:</p>
                     <div class="network-grid">
                         <div class="net-btn" onclick="selectDeposit('USDT (TRC-20)')">USDT (TRC-20)</div>
+                        <div class="net-btn" onclick="selectDeposit('USDT (BEP-20)')">USDT (BEP-20)</div>
                         <div class="net-btn" onclick="selectDeposit('TON Coin')">TON Coin</div>
                         <div class="net-btn" onclick="selectDeposit('Bitcoin (BTC)')">Bitcoin (BTC)</div>
-                        <div class="net-btn" onclick="selectDeposit('Ethereum (ETH)')">Ethereum (ETH)</div>
                     </div>
-                    <div id="deposit-details" style="display: none; margin-top: 30px;">
+
+                    <div id="deposit-details" style="display: none; margin-top: 30px; animation: slideUp 0.3s ease;">
+                        <div class="alert" style="background: rgba(139, 92, 246, 0.1); border-color: var(--primary); color: white;">
+                            Send exactly <span id="deposit-pay-amount" style="font-weight: 800;"></span> to the address below:
+                        </div>
                         <div class="address-box" onclick="copyAddress()">
-                            <code id="deposit-address">UQ...MZA</code>
+                            <code id="deposit-address"></code>
                             <i data-lucide="copy" style="width: 18px;"></i>
                         </div>
-                        <p style="text-align: center; font-size: 12px; margin-top: 10px; color: var(--text-dim);">(Tap to copy address)</p>
-                        <button class="primary-btn" style="margin-top: 30px;" onclick="confirmDeposit()">I Have Deposited</button>
+                        <p style="text-align: center; font-size: 12px; margin-top: 12px; color: var(--text-dim);">Balance will be added automatically after 1 confirmation.</p>
+                        <button class="primary-btn" style="margin-top: 30px;" onclick="confirmDeposit()">✅ I Have Sent Payment</button>
                     </div>
                 </div>
 
@@ -117,17 +124,17 @@
                     <div class="wallet-card" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); padding: 40px; border-radius: 24px; text-align: center;">
                         <p style="color: rgba(255,255,255,0.8);">Balance</p>
                         <h3 id="display-balance" style="font-size: 48px; font-weight: 900;">$0.00</h3>
-                        <button onclick="showView('deposit')" style="margin-top: 20px; background: rgba(255,255,255,0.2); border: none; padding: 10px 20px; border-radius: 10px; color: white; font-weight: 700;">+ Deposit</button>
+                        <button onclick="openGenericDeposit()" style="margin-top: 20px; background: rgba(255,255,255,0.2); border: none; padding: 10px 20px; border-radius: 10px; color: white; font-weight: 700;">+ Deposit Funds</button>
                     </div>
                 </div>
 
                 <!-- SUPPORT VIEW -->
                 <div id="screen-support" class="view">
-                    <div class="view-header"><h2>📞 Customer Support</h2></div>
+                    <div class="view-header"><h2>📞 Support</h2></div>
                     <div class="tool-card" style="padding: 30px; text-align: center;">
                         <div style="font-size: 60px; margin-bottom: 20px;">🛡️</div>
-                        <h3>Need help?</h3>
-                        <p style="margin-bottom: 30px; color: var(--text-dim);">Our team is available 24/7 to assist you with payments or account access.</p>
+                        <h3>24/7 Live Support</h3>
+                        <p style="margin-bottom: 30px; color: var(--text-dim);">Contact our official support for payment issues or premium access queries.</p>
                         <a href="https://t.me/YourSupportUser" target="_blank" class="primary-btn" style="text-decoration: none; display: block;">Contact on Telegram</a>
                     </div>
                 </div>

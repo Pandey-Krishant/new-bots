@@ -124,8 +124,8 @@ function confirmDeposit() {
 
 // --- AUTH ---
 function handleLogin() {
-    const email = document.getElementById('login-email').value;
-    const pass = document.getElementById('login-password').value;
+    const email = document.getElementById('login-email').value.trim();
+    const pass = document.getElementById('login-password').value.trim();
 
     // HARDCODED ADMIN CHECK
     if (email === 'admin@ai.com' && pass === 'admin11223344') {

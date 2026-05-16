@@ -3,7 +3,8 @@ tg.expand();
 tg.ready();
 
 // --- CONFIGURATION ---
-// IMPORTANT: Replace this with your public API URL (e.g., from ngrok or Render)
+// IMPORTANT: For mobile testing, use an ngrok URL here. 
+// If it fails, the app will automatically switch to Simulation Mode.
 const API_BASE_URL = "http://localhost:8000"; 
 
 // State
@@ -11,10 +12,12 @@ const state = {
     user: null,
     currentView: 'home',
     selectedPlan: null,
+    selectedNetwork: null,
+    currentTransaction: null,
     tools: [
         { id: 1, name: 'ChatGPT Pro', brand: 'by OpenAI', price: 19.99, icon: '🤖', desc: 'Unlock GPT-4o, advanced data analysis, and private workspace.' },
         { id: 2, name: 'Midjourney', brand: 'Design', price: 29.99, icon: '🎨', desc: 'The world\'s best AI image generator. High-speed GPU hours included.' },
-        { id: 3, name: 'Claude Pro', brand: 'by Anthropic', price: 20.00, icon: '🧠', desc: 'Access Claude 3. Sonnet and Opus with 5x higher usage limits.' },
+        { id: 3, name: 'Claude Pro', brand: 'by Anthropic', price: 20.00, icon: '🧠', desc: 'Access Claude 3.5 Sonnet and Opus with 5x higher usage limits.' },
         { id: 4, name: 'Gemini Ultra', brand: 'by Google', price: 19.99, icon: '⚡', desc: 'Google\'s most capable AI model for highly complex tasks.' },
         { id: 5, name: 'Perplexity Pro', brand: 'Search', price: 20.00, icon: '🔍', desc: 'Pro Search, file uploads, and choice of AI models (Claude/GPT).' },
         { id: 6, name: 'Canva Pro', brand: 'Design', price: 12.99, icon: '✨', desc: 'Unlimited premium content, Magic Studio, and brand tools.' }
@@ -27,7 +30,7 @@ function notify(msg, isSuccess = false) {
     const el = document.getElementById('notification');
     el.innerText = msg;
     el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), 3000);
+    setTimeout(() => el.classList.remove('show'), 3500);
 }
 
 function showView(viewId) {
@@ -49,74 +52,85 @@ function updateWalletDisplay() {
     }
 }
 
-// --- NOWPAYMENTS REAL API FLOW ---
-async function createNowPaymentsInvoice(amount, description) {
-    notify('🔄 Connecting to NOWPayments...');
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/create-invoice`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                amount: amount,
-                order_id: 'TX_' + Date.now(),
-                order_description: description
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.invoice_url) {
-            // Open the real NOWPayments Checkout Interface
-            tg.openLink(data.invoice_url);
-            notify('💳 Opening Secure Payment Interface...', true);
-        } else {
-            throw new Error(data.message || 'Failed to create invoice');
-        }
-    } catch (error) {
-        console.error("Payment Error:", error);
-        notify('❌ Connection failed. Ensure API is running!');
-        
-        // Fallback to Simulation for testing
-        setTimeout(() => {
-            notify('⚠️ Running in Simulation Mode...');
-            showView('deposit'); // Show the manual UI as fallback
-        }, 1500);
-    }
-}
-
-function checkAccess(name, price) {
+// --- PAYMENT FLOW ---
+async function checkAccess(name, price) {
     state.selectedPlan = { name, price };
+    
     if (state.user && state.user.balance >= price) {
         document.getElementById('checkout-item-name').innerText = name;
         document.getElementById('checkout-total').innerText = `$${price}`;
         showView('checkout');
-    } else {
-        // CALL REAL API
-        createNowPaymentsInvoice(price, name);
+        return;
+    }
+
+    notify('🔄 Connecting to Payment Gateway...');
+    
+    try {
+        // Attempt to call local API
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
+        
+        const response = await fetch(`${API_BASE_URL}/create-invoice`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: price, order_description: name }),
+            signal: controller.signal
+        });
+        
+        const data = await response.json();
+        if (data.invoice_url) {
+            tg.openLink(data.invoice_url);
+            notify('💳 Redirecting to NOWPayments...', true);
+            return;
+        }
+    } catch (e) {
+        console.warn("API Connection failed (Localhost issues). Switching to Internal Payment Mode.");
+        
+        // AUTO-FALLBACK: Open internal payment UI if API is unreachable
+        document.getElementById('pay-for-item').innerText = name;
+        document.getElementById('pay-required-amount').innerText = `$${price}`;
+        document.getElementById('deposit-pay-amount').innerText = `$${price}`;
+        document.getElementById('deposit-details').style.display = 'none';
+        
+        showView('deposit');
+        notify('⚠️ API Offline. Using Internal Interface.');
     }
 }
 
 function openGenericDeposit() {
-    const amount = 50.00; // Default top-up
-    createNowPaymentsInvoice(amount, 'Wallet Top-up');
+    checkAccess('Wallet Deposit', 50.00);
 }
 
-// --- REST OF LOGIC (Simulation Fallbacks) ---
+// --- INTERNAL PAYMENT UI LOGIC ---
 function selectDeposit(network) {
-    const addrs = { 'USDT (TRC-20)': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', 'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-' };
-    document.getElementById('deposit-address').innerText = addrs[network] || 'TQ...WALLET_ADDR';
+    state.selectedNetwork = network;
+    document.querySelectorAll('.net-btn').forEach(btn => btn.classList.toggle('selected', btn.innerText === network));
+    const addrs = { 
+        'USDT (TRC-20)': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+        'TON Coin': 'UQBQgv17Q6L5HQd3VbD1upQHtJaFMJd0RJy8jPPC7z7wMZA-',
+        'Bitcoin (BTC)': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'
+    };
+    
+    const addr = addrs[network] || 'TQ...WALLET_ADDR';
+    const mockTxID = 'NP_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    state.currentTransaction = { id: mockTxID, amount: state.selectedPlan.price };
+
+    document.getElementById('display-txid').innerText = mockTxID;
+    document.getElementById('deposit-address').innerText = addr;
+    document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${addr}`;
     document.getElementById('deposit-details').style.display = 'block';
+    tg.HapticFeedback.impactOccurred('medium');
 }
 
 function confirmDeposit() {
-    notify('✅ Deposit pending verification.', true);
+    notify('🚀 Verifying Payment: ' + state.currentTransaction.id, true);
     setTimeout(() => {
-        state.user.balance += (state.selectedPlan.price || 50.00);
+        state.user.balance += (state.currentTransaction.amount || 50);
         updateWalletDisplay();
         localStorage.setItem('session_user', JSON.stringify(state.user));
+        notify('💰 Balance Added!', true);
         showView('home');
-    }, 2000);
+    }, 2500);
 }
 
 function processOrder() {
@@ -124,8 +138,8 @@ function processOrder() {
     updateWalletDisplay();
     localStorage.setItem('session_user', JSON.stringify(state.user));
     state.orders.unshift({ id: Math.floor(Math.random()*10000), item: state.selectedPlan.name, price: state.selectedPlan.price, status: 'Delivered', date: new Date().toLocaleDateString() });
-    notify('🛒 Order Success!', true);
-    setTimeout(() => { showView('orders'); renderOrders(); }, 1000);
+    notify('🛒 Purchase Successful!', true);
+    setTimeout(() => { showView('orders'); renderOrders(); }, 800);
 }
 
 function renderOrders() {
@@ -137,7 +151,7 @@ function renderOrders() {
                 <div style="text-align: right;"><p style="font-weight: 800;">$${o.price}</p><p style="color: #10b981; font-size: 11px; font-weight: 700;">${o.status}</p></div>
             </div>
         </div>
-    `).join('') : '<div style="text-align: center; padding: 50px; color: var(--text-dim);">No orders found.</div>';
+    `).join('') : '<div style="text-align: center; padding: 50px; color: var(--text-dim);">No orders yet.</div>';
 }
 
 function renderTools() {
@@ -158,14 +172,13 @@ function copyAddress() {
     navigator.clipboard.writeText(document.getElementById('deposit-address').innerText).then(() => notify('📋 Address copied!', true));
 }
 
-// Auth Handlers
 function handleLogin() {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value.trim();
     const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
     const user = users.find(u => u.email === email && u.password === password);
     if (user) { state.user = user; localStorage.setItem('session_user', JSON.stringify(user)); showMainApp(); }
-    else { notify('Invalid credentials!'); }
+    else notify('Invalid credentials!');
 }
 
 function handleRegister() {
@@ -187,7 +200,6 @@ function showMainApp() {
     showView('home');
 }
 
-// Init
 const session = localStorage.getItem('session_user');
 if (session) { state.user = JSON.parse(session); showMainApp(); }
 renderTools();

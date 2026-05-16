@@ -3,131 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Premium Hub | Subscribe to the Future</title>
+    <title>AI Premium Store</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-    <div class="bg-glow"></div>
     <div id="notification" class="notification"></div>
 
     <div id="app">
         <!-- AUTH SCREEN -->
         <div id="screen-auth" class="screen active">
             <div class="login-container">
-                <div class="logo">🚀</div>
+                <div style="font-size: 50px; margin-bottom: 20px;">🚀</div>
                 <div id="form-login">
                     <h1>Welcome Back</h1>
-                    <p>Login with your credentials</p>
+                    <p>Enter your credentials to continue</p>
                     <div class="input-group">
                         <input type="email" id="login-email" placeholder="Email Address">
                         <input type="password" id="login-password" placeholder="Password">
                     </div>
                     <button class="primary-btn" onclick="handleLogin()">Login</button>
-                    <p class="switch-text">Don't have an account? <span onclick="toggleAuth('register')">Register Now</span></p>
+                    <p style="margin-top: 20px; color: var(--text-dim);">New here? <span onclick="toggleAuth('register')" style="color: var(--primary); cursor: pointer; font-weight: 700;">Register</span></p>
                 </div>
                 <div id="form-register" style="display: none;">
                     <h1>Create Account</h1>
-                    <p>Join the AI Premium community</p>
+                    <p>Start your AI journey today</p>
                     <div class="input-group">
                         <input type="text" id="reg-username" placeholder="Username">
                         <input type="email" id="reg-email" placeholder="Email Address">
                         <input type="password" id="reg-password" placeholder="Password">
                     </div>
                     <button class="primary-btn" onclick="handleRegister()">Register</button>
-                    <p class="switch-text">Already have an account? <span onclick="toggleAuth('login')">Login Now</span></p>
+                    <p style="margin-top: 20px; color: var(--text-dim);">Already have an account? <span onclick="toggleAuth('login')" style="color: var(--primary); cursor: pointer; font-weight: 700;">Login</span></p>
                 </div>
             </div>
         </div>
 
-        <!-- MAIN APP CONTENT -->
+        <!-- MAIN APP -->
         <div id="main-content" style="display: none;">
             <div class="container">
                 <!-- HOME SCREEN -->
                 <div id="screen-home" class="view active">
                     <header class="hero">
-                        <div class="user-profile">
-                            <span id="display-username" style="font-weight: 700; color: var(--primary);">@User</span>
-                            <button class="logout-btn" onclick="handleLogout()"><i data-lucide="log-out"></i></button>
-                        </div>
                         <h1>Premium AI Store</h1>
                         <p>Get instant access to the world's most powerful AI tools at unbeatable prices. Secure crypto payments & 24/7 delivery.</p>
                     </header>
 
-                    <section class="featured">
-                        <div class="featured-card">
-                            <div class="featured-icon">🚀</div>
-                            <div class="featured-info">
-                                <span style="color: var(--secondary); font-weight: 700; font-size: 12px; text-transform: uppercase;">Limited Time Offer</span>
-                                <h2>ChatGPT Plus (Private)</h2>
-                                <div class="featured-price">$19.99 <span style="font-size: 14px; font-weight: 400; color: var(--text-dim);">/ Month</span></div>
-                            </div>
-                            <button class="buy-btn" style="margin-left: auto; padding: 15px 30px;" onclick="openCheckout('ChatGPT Plus', 19.99)">Buy Now</button>
+                    <div class="featured-card" onclick="openCheckout('ChatGPT Plus (Private)', 19.99)">
+                        <div class="featured-icon">🚀</div>
+                        <div class="featured-info">
+                            <span class="badge">Limited Time Offer</span>
+                            <h2>ChatGPT Plus (Private)</h2>
+                            <p style="color: var(--text-dim); margin-bottom: 12px;">Full access to GPT-4o, DALL·E 3, and Custom GPTs.</p>
+                            <div class="featured-price">$19.99 <span style="font-size: 14px; font-weight: 400; color: var(--text-dim);">/ Month</span></div>
                         </div>
-                    </section>
+                    </div>
 
-                    <section class="tools">
-                        <div class="section-header" style="margin-bottom: 30px;">
-                            <h3 style="font-size: 24px; font-weight: 700;">All AI Subscriptions</h3>
-                        </div>
-                        <div class="tool-grid" id="tools-list">
-                            <!-- Populated by JS -->
-                        </div>
-                    </section>
+                    <div class="section-header">
+                        <h3>All AI Subscriptions</h3>
+                    </div>
+
+                    <div class="tool-grid" id="tools-list">
+                        <!-- Populated by JS -->
+                    </div>
                 </div>
 
                 <!-- CHECKOUT SCREEN -->
                 <div id="screen-checkout" class="view">
-                    <div class="checkout-header" style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px;">
+                    <div class="checkout-header">
                         <button onclick="showView('home')" style="background: none; border: none; color: white;"><i data-lucide="chevron-left"></i></button>
-                        <h2 style="font-size: 24px;">Order Summary</h2>
+                        <h2>Order Summary</h2>
                     </div>
-                    <div class="tool-card" style="margin-bottom: 30px; padding: 30px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span>Item:</span> <span id="checkout-item-name" style="font-weight: 700;">Plan Name</span>
+                    
+                    <div class="tool-card" style="margin-bottom: 30px; padding: 30px; cursor: default;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                            <span>Plan:</span> <span id="checkout-item-name" style="font-weight: 700;">Plan Name</span>
                         </div>
-                        <div style="font-size: 24px; font-weight: 800;">Total: <span id="checkout-total">$0.00</span></div>
+                        <div style="font-size: 28px; font-weight: 800; color: white;">Total Amount: <span id="checkout-total">$0.00</span></div>
                     </div>
-                    <p style="color: var(--text-dim); margin-bottom: 15px;">Select payment network:</p>
-                    <div class="network-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px;">
-                        <div class="net-btn" onclick="selectNetwork('USDT (TRC-20)')" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; text-align: center; cursor: pointer;">USDT (TRC-20)</div>
-                        <div class="net-btn" onclick="selectNetwork('USDT (BEP-20)')" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; text-align: center; cursor: pointer;">USDT (BEP-20)</div>
-                        <div class="net-btn" onclick="selectNetwork('TON Coin')" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; text-align: center; cursor: pointer;">TON Coin</div>
-                        <div class="net-btn" onclick="selectNetwork('Bitcoin (BTC)')" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; text-align: center; cursor: pointer;">Bitcoin (BTC)</div>
+
+                    <p style="color: var(--text-dim); margin-bottom: 20px;">Please select your preferred cryptocurrency/network for payment:</p>
+                    
+                    <div class="network-grid">
+                        <div class="net-btn" onclick="selectNetwork('USDT (TRC-20)')">USDT (TRC-20)</div>
+                        <div class="net-btn" onclick="selectNetwork('USDT (BEP-20)')">USDT (BEP-20)</div>
+                        <div class="net-btn" onclick="selectNetwork('USDT (ERC-20)')">USDT (ERC-20)</div>
+                        <div class="net-btn" onclick="selectNetwork('TON Coin')">TON Coin</div>
+                        <div class="net-btn" onclick="selectNetwork('Bitcoin (BTC)')">Bitcoin (BTC)</div>
                     </div>
+
                     <div id="payment-details" style="display: none;">
-                        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; padding: 20px; border-radius: 15px; margin-bottom: 20px; font-size: 14px;">
-                            ⚠️ Send exactly <span id="pay-amount" style="font-weight: 700;"></span> to:
-                            <div class="address-box" onclick="copyAddress()" style="background: #000; padding: 15px; border-radius: 10px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px dashed #333; cursor: pointer;">
-                                <code id="wallet-address" style="font-family: monospace; color: var(--secondary); font-size: 12px; word-break: break-all;"></code>
-                                <i data-lucide="copy" style="width: 16px;"></i>
+                        <div class="alert">
+                            ⚠️ Please send exactly <span id="pay-amount" style="font-weight: 700;"></span> worth of <span id="pay-network"></span> to the address:
+                            <div class="address-box" onclick="copyAddress()" style="margin-top: 15px;">
+                                <code id="wallet-address"></code>
+                                <i data-lucide="copy" style="width: 18px;"></i>
                             </div>
                         </div>
-                        <button class="primary-btn" onclick="confirmPayment()">Confirm Payment</button>
-                    </div>
-                </div>
-
-                <!-- ORDERS SCREEN -->
-                <div id="screen-orders" class="view">
-                    <div style="margin-bottom: 30px;"><h2>📦 My Orders</h2></div>
-                    <div id="orders-list"></div>
-                </div>
-
-                <!-- WALLET SCREEN -->
-                <div id="screen-wallet" class="view">
-                    <div style="margin-bottom: 30px;"><h2>💳 My Wallet</h2></div>
-                    <div class="tool-card" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; padding: 40px; text-align: center;">
-                        <p style="color: rgba(255,255,255,0.8);">Available Balance</p>
-                        <h3 id="display-balance" style="font-size: 48px; font-weight: 900; color: white;">$0.00</h3>
+                        <button class="primary-btn" onclick="confirmPayment()">✅ I Have Paid</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Bottom Nav -->
+            <!-- Nav Bar -->
             <nav class="nav-bar">
                 <a href="#" class="nav-item active" onclick="showView('home')"><i data-lucide="home"></i><span>Home</span></a>
                 <a href="#" class="nav-item" onclick="showView('wallet')"><i data-lucide="wallet"></i><span>Wallet</span></a>

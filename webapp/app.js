@@ -9,32 +9,29 @@ const state = {
     selectedPlan: null,
     selectedNetwork: null,
     tools: [
-        { id: 1, name: 'ChatGPT Pro', price: 19.99, icon: '🤖', desc: 'GPT-4o & DALL-E 3 access.' },
-        { id: 2, name: 'Midjourney', price: 29.99, icon: '🎨', desc: 'AI Image generation v6.' },
-        { id: 3, name: 'Claude Pro', price: 20.00, icon: '🧠', desc: 'Anthropic\'s most powerful model.' },
-        { id: 4, name: 'Gemini Ultra', price: 19.99, icon: '⚡', desc: 'Google Capability model.' }
+        { id: 1, name: 'ChatGPT Pro', brand: 'by OpenAI', price: 19.99, icon: '🤖', desc: 'Unlock GPT-4o, advanced data analysis, and private workspace.' },
+        { id: 2, name: 'Midjourney', brand: 'Design', price: 29.99, icon: '🎨', desc: 'The world\'s best AI image generator. High-speed GPU hours included.' },
+        { id: 3, name: 'Claude Pro', brand: 'by Anthropic', price: 20.00, icon: '🧠', desc: 'Access Claude 3.5 Sonnet and Opus with 5x higher usage limits.' },
+        { id: 4, name: 'Gemini Ultra', brand: 'by Google', price: 19.99, icon: '⚡', desc: 'Google\'s most capable AI model for highly complex tasks.' },
+        { id: 5, name: 'Perplexity Pro', brand: 'Search', price: 20.00, icon: '🔍', desc: 'Pro Search, file uploads, and choice of AI models (Claude/GPT).' },
+        { id: 6, name: 'Canva Pro', brand: 'Design', price: 12.99, icon: '✨', desc: 'Unlimited premium content, Magic Studio, and brand tools.' }
     ],
     orders: []
 };
 
-// --- CUSTOM NOTIFICATIONS (3D Popup) ---
+// --- CUSTOM NOTIFICATIONS ---
 function notify(msg, isSuccess = false) {
     const el = document.getElementById('notification');
     el.innerText = msg;
-    el.style.borderColor = isSuccess ? '#10b981' : '#a855f7';
-    el.style.boxShadow = isSuccess ? '0 20px 40px -10px rgba(16, 185, 129, 0.4)' : '0 20px 40px -10px rgba(168, 85, 247, 0.4)';
-    
+    el.style.borderLeft = isSuccess ? '5px solid #10b981' : '5px solid #ef4444';
     el.classList.add('show');
-    tg.HapticFeedback.notificationOccurred(isSuccess ? 'success' : 'warning');
-    
-    setTimeout(() => el.classList.remove('show'), 3500);
+    setTimeout(() => el.classList.remove('show'), 3000);
 }
 
 // --- AUTH LOGIC ---
 function toggleAuth(type) {
     document.getElementById('form-login').style.display = type === 'register' ? 'none' : 'block';
     document.getElementById('form-register').style.display = type === 'register' ? 'block' : 'none';
-    tg.HapticFeedback.impactOccurred('light');
 }
 
 function handleRegister() {
@@ -56,8 +53,7 @@ function handleRegister() {
     users.push({ username, email, password, balance: 0.00 });
     localStorage.setItem('registered_users', JSON.stringify(users));
 
-    // Success Popup
-    notify('✨ Registration Successful! Welcome to the future.', true);
+    notify('✨ Registration Successful! Please login.', true);
     setTimeout(() => toggleAuth('login'), 1500);
 }
 
@@ -79,7 +75,7 @@ function handleLogin() {
         notify('🚀 Login Successful!', true);
         setTimeout(showMainApp, 800);
     } else {
-        notify('Invalid credentials! Check your email/pass.');
+        notify('Invalid email or password!');
     }
 }
 
@@ -88,14 +84,11 @@ function handleLogout() {
     state.user = null;
     document.getElementById('main-content').style.display = 'none';
     document.getElementById('screen-auth').classList.add('active');
-    tg.HapticFeedback.impactOccurred('medium');
 }
 
 function showMainApp() {
     document.getElementById('screen-auth').classList.remove('active');
     document.getElementById('main-content').style.display = 'block';
-    document.getElementById('display-username').innerText = state.user.username;
-    document.getElementById('display-balance').innerText = `$${state.user.balance.toFixed(2)}`;
     showView('home');
 }
 
@@ -116,21 +109,24 @@ function showView(viewId) {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     const activeNav = document.querySelector(`.nav-item[onclick*="${viewId}"]`);
     if (activeNav) activeNav.classList.add('active');
-    tg.HapticFeedback.selectionChanged();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function renderTools() {
     const list = document.getElementById('tools-list');
     list.innerHTML = state.tools.map(tool => `
-        <div class="tool-card">
+        <div class="tool-card" onclick="openCheckout('${tool.name}', ${tool.price})">
             <div class="tool-header">
                 <div class="tool-icon">${tool.icon}</div>
-                <div class="tool-title"><h4>${tool.name}</h4></div>
+                <div class="tool-title">
+                    <h4>${tool.name}</h4>
+                    <p>${tool.brand}</p>
+                </div>
             </div>
             <p class="tool-desc">${tool.desc}</p>
             <div class="tool-footer">
                 <div class="price-tag">$${tool.price}</div>
-                <button class="buy-btn" onclick="openCheckout('${tool.name}', ${tool.price})">Buy</button>
+                <button class="get-access-btn">Get Access</button>
             </div>
         </div>
     `).join('');
@@ -152,11 +148,15 @@ function selectNetwork(network) {
     document.getElementById('pay-network').innerText = network;
     document.getElementById('wallet-address').innerText = mockAddresses[network] || 'TQ...WALLET_ADDR';
     document.getElementById('payment-details').style.display = 'block';
-    tg.HapticFeedback.impactOccurred('medium');
 }
 
 function copyAddress() {
     navigator.clipboard.writeText(document.getElementById('wallet-address').innerText).then(() => notify('📋 Address copied!', true));
+}
+
+function confirmPayment() {
+    notify('✅ Payment confirmed! Your order is being verified.', true);
+    setTimeout(() => showView('home'), 2000);
 }
 
 init();

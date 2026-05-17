@@ -115,9 +115,66 @@ function showView(viewId) {
     const navItem = document.querySelector(`.nav-item[onclick*="${viewId}"]`);
     if (navItem) navItem.classList.add('active');
     
-
+    // Render orders when orders tab is opened
+    if (viewId === 'orders') renderOrders();
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// --- ORDERS / PURCHASE HISTORY ---
+function savePurchase(username, email, productName, price) {
+    const purchases = JSON.parse(localStorage.getItem('all_purchases') || '[]');
+    purchases.unshift({
+        username,
+        email,
+        product: productName,
+        price,
+        date: new Date().toISOString()
+    });
+    localStorage.setItem('all_purchases', JSON.stringify(purchases));
+}
+
+function renderOrders() {
+    const container = document.getElementById('orders-list');
+    const heading = document.getElementById('orders-heading');
+    if (!container) return;
+    const allPurchases = JSON.parse(localStorage.getItem('all_purchases') || '[]');
+    const isAdmin = state.user && state.user.isAdmin;
+    
+    if (heading) {
+        heading.innerText = isAdmin ? 'All User Orders' : 'Purchase History';
+    }
+
+    // Admin sees ALL user purchases, normal user sees only their own
+    const filtered = isAdmin
+        ? allPurchases
+        : allPurchases.filter(p => p.email === (state.user && state.user.email));
+    
+    if (!filtered.length) {
+        container.innerHTML = `
+            <div class="tool-card" style="text-align:center; padding:50px 20px;">
+                <div style="font-size:60px; margin-bottom:20px;">📦</div>
+                <h3>${isAdmin ? 'No purchases yet from any user' : 'No purchases yet'}</h3>
+                <p style="color:var(--text-dim); margin-top:10px;">${isAdmin ? 'User purchases will appear here.' : 'Your purchase history will appear here.'}</p>
+            </div>`;
+        return;
+    }
+    
+    container.innerHTML = filtered.map(p => {
+        const d = new Date(p.date);
+        const dateStr = d.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+        const timeStr = d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+        return `
+        <div class="tool-card" style="display:flex; align-items:center; gap:15px; padding:18px; margin-bottom:12px;">
+            <div style="font-size:32px;">🛒</div>
+            <div style="flex:1; min-width:0;">
+                <div style="font-weight:700;">${p.product}</div>
+                ${isAdmin ? `<div style="color:#ffeb3b; font-size:13px; font-weight:600;">👤 ${p.username} (${p.email})</div>` : ''}
+                <div style="color:var(--text-dim); font-size:12px;">${dateStr} • ${timeStr}</div>
+            </div>
+            <div style="color:var(--primary); font-weight:800; font-size:16px;">$${p.price}</div>
+        </div>`;
+    }).join('');
 }
 
 
@@ -128,7 +185,8 @@ function toggleAuth(type) {
 
 function updateWalletDisplay() {
     if (state.user) {
-        const bal = `$${Number(state.user.balance).toFixed(2)}`;
+        const isAdmin = state.user.isAdmin;
+        const bal = isAdmin ? '∞' : `$${Number(state.user.balance).toFixed(2)}`;
         const homeBal = document.getElementById('home-balance');
         const dispBal = document.getElementById('display-balance');
         const homeUser = document.getElementById('home-username');
@@ -167,6 +225,11 @@ async function checkAccess(name, price) {
     state.selectedPlan = { name, price };
     
     addLog(state.user ? state.user.username : 'Guest', 'Click Get Access', `Clicked on: ${name} ($${price})`);
+    
+    // Save purchase record
+    if (state.user) {
+        savePurchase(state.user.username, state.user.email, name, price);
+    }
 
     // NOWPAYMENTS REDIRECT
     notify('🔄 Generating Secure Invoice...', true);

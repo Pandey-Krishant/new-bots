@@ -228,43 +228,33 @@ function handleLogin() {
     const pass = document.getElementById('login-password').value;
     
     if (!email || !pass) return notify('Fill all fields');
-    notify('🔄 Logging in...', true);
 
-    fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email, password: pass })
-    })
-    .then(res => {
-        if (!res.ok) throw new Error('Invalid login');
-        return res.json();
-    })
-    .then(data => {
-        // Fetch user info
-        fetch(`${API_URL}/me`, {
-            headers: { 'Authorization': `Bearer ${data.token}` }
+    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+    const user = users.find(u => u.email === email && u.password === pass);
+    
+    if (user) {
+        notify('🔄 Securing session...', true);
+        
+        // Fetch secure token for checkout
+        fetch(`${API_URL}/get-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: user.user_id, username: user.username })
         })
         .then(res => res.json())
-        .then(userData => {
-            state.user = { ...userData, token: data.token };
-            localStorage.setItem('session_user', JSON.stringify(state.user));
-            addLog(userData.username, 'Login', `User logged in.`);
-            showMainApp();
-        });
-    })
-    .catch(e => {
-        // Fallback for local testing if API fails
-        const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-        const user = users.find(u => u.email === email && u.password === pass);
-        if (user) {
+        .then(data => {
+            user.token = data.token;
             state.user = user;
             localStorage.setItem('session_user', JSON.stringify(user));
-            addLog(user.username, 'Login', `User logged in (Local).`);
+            addLog(user.username, 'Login', `User logged in locally.`);
             showMainApp();
-        } else {
-            notify('Invalid login!');
-        }
-    });
+        })
+        .catch(() => {
+            notify('Error securing session. Try again.');
+        });
+    } else {
+        notify('Invalid login!');
+    }
 }
 
 function handleRegister() {
@@ -273,33 +263,15 @@ function handleRegister() {
     const pass = document.getElementById('reg-password').value;
     if (!user || !email || !pass) return notify('Fill all fields');
     
-    notify('🔄 Registering...', true);
+    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+    if (users.find(u => u.email === email)) return notify('Email already exists');
     
-    fetch(`${API_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: user, email: email, password: pass })
-    })
-    .then(res => {
-        if (!res.ok) throw new Error('Registration failed');
-        return res.json();
-    })
-    .then(data => {
-        addLog(user, 'Registration', `New account created.`);
-        notify('✨ Registered!', true);
-        toggleAuth('login');
-    })
-    .catch(e => {
-        // Fallback for local testing
-        const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-        if (users.find(u => u.email === email)) return notify('Email already exists');
-        
-        users.push({ username: user, email, password: pass, balance: 0, user_id: Math.floor(Math.random() * 1000000) });
-        localStorage.setItem('registered_users', JSON.stringify(users));
-        addLog(user, 'Registration', `New account (Local).`);
-        notify('✨ Registered locally!', true);
-        toggleAuth('login');
-    });
+    const user_id = Math.floor(Math.random() * 100000000);
+    users.push({ username: user, email, password: pass, balance: 0, user_id: user_id });
+    localStorage.setItem('registered_users', JSON.stringify(users));
+    addLog(user, 'Registration', `New account created locally.`);
+    notify('✨ Registered!', true);
+    toggleAuth('login');
 }
 
 function showMainApp() {

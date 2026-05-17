@@ -128,26 +128,12 @@ async def get_current_user(request: Request):
     
     tg_user = validate_telegram_data(auth)
     if tg_user:
-        user = await db.get_user(tg_user['id'])
-        if not user:
-            existing = await db.get_user_by_email_or_username(tg_user.get('username'))
-            if existing and not existing.get('user_id'):
-                await db.users.update_one({"_id": existing["_id"]}, {"$set": {"user_id": tg_user['id']}})
-                user = await db.get_user(tg_user['id'])
-            else:
-                await db.register_user(tg_user['id'], tg_user.get('username', 'User'))
-                user = await db.get_user(tg_user['id'])
-        return user
+        # Return user data without requiring MongoDB user presence
+        return {"user_id": tg_user['id'], "username": tg_user.get('username', 'User')}
     
     payload = verify_token(auth)
     if payload and payload.get("sub") == "user":
-        try:
-            user_id = int(payload.get("user_id"))
-            user = await db.get_user(user_id)
-            if user:
-                return user
-        except Exception:
-            pass
+        return {"user_id": payload.get("user_id"), "username": payload.get("username", "User")}
         
     raise HTTPException(status_code=401, detail="Invalid Session")
 
@@ -156,57 +142,26 @@ def is_admin(user_id):
 
 # --- ENDPOINTS ---
 
+@app.post("/api/get-token")
+async def get_local_token(data: dict):
+    # Generates a secure token for local storage users without DB checks
+    user_id = data.get("user_id")
+    username = data.get("username", "User")
+    if not user_id: 
+        raise HTTPException(status_code=400, detail="user_id is required")
+    
+    token = sign_token({"sub": "user", "user_id": user_id, "username": username})
+    return {"status": "ok", "token": token, "user_id": user_id}
+
 @app.post("/api/register")
 async def register(data: dict):
-    try:
-        email = data.get("email")
-        password = data.get("password")
-        username = data.get("username")
-        
-        if not username or not password: 
-            raise HTTPException(status_code=400, detail="Username and Password required")
-        
-        existing = await db.get_user_by_email_or_username(username)
-        if existing: 
-            raise HTTPException(status_code=400, detail="Username or Email already exists")
-        if email:
-            existing_email = await db.get_user_by_email_or_username(email)
-            if existing_email:
-                raise HTTPException(status_code=400, detail="Username or Email already exists")
-        
-        user_id = int(time.time() * 1000) % 1000000000
-        await db.register_user(user_id, username, email, hash_password(password))
-        token = sign_token({"sub": "user", "user_id": user_id})
-        return {"status": "ok", "user_id": user_id, "token": token}
-    except Exception as e:
-        print(f"REGISTER ERROR: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+    # Deprecated: use local storage instead
+    raise HTTPException(status_code=400, detail="Use local storage registration")
 
 @app.post("/api/login")
 async def login(data: dict):
-    try:
-        identifier = data.get("email")
-        password = data.get("password")
-        
-        print(f"Login attempt for: {identifier}")
-        
-        user = await db.get_user_by_email_or_username(identifier)
-        if not user:
-            print("User not found")
-            raise HTTPException(status_code=401, detail="User not found")
-            
-        if not verify_password(password, user.get("password")):
-            print("Password mismatch")
-            raise HTTPException(status_code=401, detail="Invalid password")
-        
-        print(f"Login successful for {identifier}")
-        token = sign_token({"sub": "user", "user_id": user["user_id"]})
-        return {"status": "ok", "token": token, "user_id": user["user_id"]}
-    except HTTPException as he:
-        raise he
-    except Exception as e:
-        print(f"LOGIN ERROR: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail="Database connection failed or Internal error")
+    # Deprecated: use local storage instead
+    raise HTTPException(status_code=400, detail="Use local storage login")
 
 @app.get("/api/me")
 async def get_me(request: Request):

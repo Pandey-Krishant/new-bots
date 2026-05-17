@@ -23,11 +23,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [
         [InlineKeyboardButton("🚀 Launch Elite Store", web_app=WebAppInfo(url=WEBAPP_URL))],
         [
-            InlineKeyboardButton("💳 Wallet", callback_data='my_wallet'),
-            InlineKeyboardButton("📦 Orders", callback_data='my_orders')
+            InlineKeyboardButton("💳 Wallet", web_app=WebAppInfo(url=WEBAPP_URL + "?view=wallet")),
+            InlineKeyboardButton("📦 Orders", web_app=WebAppInfo(url=WEBAPP_URL + "?view=orders"))
         ],
         [
-            InlineKeyboardButton("📞 Support", callback_data='support'),
+            InlineKeyboardButton("📞 Support", web_app=WebAppInfo(url=WEBAPP_URL + "?view=support")),
             InlineKeyboardButton("ℹ️ About", callback_data='about')
         ]
     ]

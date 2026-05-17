@@ -225,11 +225,6 @@ async function checkAccess(name, price) {
     state.selectedPlan = { name, price };
     
     addLog(state.user ? state.user.username : 'Guest', 'Click Get Access', `Clicked on: ${name} ($${price})`);
-    
-    // Save purchase record
-    if (state.user) {
-        savePurchase(state.user.username, state.user.email, name, price);
-    }
 
     // NOWPAYMENTS REDIRECT
     notify('🔄 Generating Secure Invoice...', true);
@@ -469,6 +464,13 @@ async function saveAdminPlan() {
 
     if (!name || !price) return notify('Name and price are required!');
 
+    // Prevent multiple submissions
+    const saveBtn = document.querySelector('button[onclick="saveAdminPlan()"]');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerText = "Saving...";
+    }
+
     try {
         let imageUrl = document.getElementById('admin-image-url').value;
         // Upload new image if a file was picked
@@ -504,6 +506,11 @@ async function saveAdminPlan() {
         renderTools();
     } catch (e) {
         notify('Error: ' + e.message);
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerText = "Save Product";
+        }
     }
 }
 
@@ -600,7 +607,15 @@ if (session) {
         localStorage.removeItem('session_user');
         state.user = null;
     } else {
-        loadDynamicPlans().then(() => showMainApp());
+        loadDynamicPlans().then(() => {
+            showMainApp();
+            // Handle URL params for direct view linking (e.g. from Telegram bot buttons)
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewParam = urlParams.get('view');
+            if (viewParam) {
+                showView(viewParam);
+            }
+        });
     }
 }
 renderTools();

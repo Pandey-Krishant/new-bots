@@ -240,14 +240,67 @@ async def create_payment(request: Request):
     data = await request.json()
     amount = data.get("amount")
     network = data.get("network", "usdttrc20")
+    plan_name = data.get("plan_name", "Deposit")
+    
+    import urllib.parse
+    safe_plan = urllib.parse.quote(plan_name)
+    success_url = f"https://new-bots.vercel.app/?payment=success&plan={safe_plan}&price={amount}"
+    cancel_url = f"https://new-bots.vercel.app/?payment=cancel&plan={safe_plan}&price={amount}"
     
     r = requests.post("https://api.nowpayments.io/v1/invoice", json={
         "price_amount": float(amount),
         "price_currency": "usd",
         "pay_currency": network,
-        "order_id": f"DEP_{user['user_id']}_{int(time.time())}"
+        "order_id": f"DEP_{user['user_id']}_{int(time.time())}",
+        "success_url": success_url,
+        "cancel_url": cancel_url
     }, headers={"x-api-key": NOWPAYMENTS_API_KEY, "Content-Type": "application/json"})
     return r.json()
+
+@app.post("/api/confirm-order")
+async def confirm_order(request: Request):
+    user = await get_current_user(request)
+    data = await request.json()
+    plan_name = data.get("plan_name", "Unknown Plan")
+    price = float(data.get("price", 0))
+    status = data.get("status", "Completed")
+    
+    if status == 'Completed':
+        await db.create_order(
+            user_id=user['user_id'],
+            username=user['username'],
+            plan_id="N/A",
+            plan_name=plan_name,
+            quantity=1,
+            price=price,
+            crypto_network="nowpayments",
+            txid="N/A",
+            status="Completed"
+        )
+        log_msg = f"Payment SUCCESSFUL for {plan_name} (${price})"
+    else:
+        log_msg = f"Payment UNSUCCESSFUL/CANCELLED for {plan_name} (${price})"
+        
+    await db.add_log(user['user_id'], 'Payment', log_msg)
+    
+    # Notify Admin bot
+    msg = (
+        f"🔔 <b>Payment Alert</b>\n"
+        f"👤 <b>User:</b> {user['username']}\n"
+        f"🛒 <b>Product:</b> {plan_name}\n"
+        f"💰 <b>Amount:</b> ${price}\n"
+        f"📊 <b>Status:</b> {'✅ SUCCESS' if status == 'Completed' else '❌ FAILED/CANCELLED'}"
+    )
+    for admin_id in ADMIN_IDS:
+        try:
+            requests.post(f"https://api.telegram.org/bot{ADMIN_BOT_TOKEN}/sendMessage", json={
+                "chat_id": admin_id,
+                "text": msg,
+                "parse_mode": "HTML"
+            })
+        except: pass
+        
+    return {"status": "ok"}
 
 @app.get("/api/orders")
 async def get_orders(request: Request):

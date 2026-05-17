@@ -236,7 +236,7 @@ async function checkAccess(name, price) {
                 'Content-Type': 'application/json',
                 'Authorization': token
             },
-            body: JSON.stringify({ amount: price, network: 'usdttrc20' }) // Default for direct product buy
+            body: JSON.stringify({ amount: price, network: 'usdttrc20', plan_name: name }) // Default for direct product buy
         });
         const data = await response.json();
         if (data.invoice_url) {
@@ -635,10 +635,30 @@ if (session) {
     } else {
         loadDynamicPlans().then(() => {
             showMainApp();
-            // Handle URL params for direct view linking (e.g. from Telegram bot buttons)
+            // Handle URL params for direct view linking or payment status
             const urlParams = new URLSearchParams(window.location.search);
+            const paymentStatus = urlParams.get('payment');
             const viewParam = urlParams.get('view');
-            if (viewParam) {
+            const planName = urlParams.get('plan');
+            const price = urlParams.get('price');
+            
+            if (paymentStatus === 'success') {
+                notify('✅ Payment successful! Please DM Admin @Johnny7189 to receive your product.', true);
+                fetch(`${API_URL}/confirm-order`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.user.token}` },
+                    body: JSON.stringify({ plan_name: planName || 'Unknown Plan', price: parseFloat(price || 0), status: 'Completed' })
+                });
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else if (paymentStatus === 'cancel') {
+                notify('❌ Payment unsuccessful. Please retry.', true);
+                fetch(`${API_URL}/confirm-order`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.user.token}` },
+                    body: JSON.stringify({ plan_name: planName || 'Unknown Plan', price: parseFloat(price || 0), status: 'Failed' })
+                });
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else if (viewParam) {
                 showView(viewParam);
             }
         });

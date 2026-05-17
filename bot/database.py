@@ -76,7 +76,7 @@ class Database:
         return await self.plans.find_one({"_id": plan_id})
 
     # Order Methods
-    async def create_order(self, user_id, username, plan_id, plan_name, quantity, price, crypto_network, txid):
+    async def create_order(self, user_id, username, plan_id, plan_name, quantity, price, crypto_network, txid, status="Pending"):
         order = {
             "user_id": user_id,
             "username": username,
@@ -86,7 +86,7 @@ class Database:
             "total_price": price * quantity,
             "crypto_network": crypto_network,
             "txid": txid,
-            "status": "Pending",
+            "status": status,
             "timestamp": datetime.utcnow()
         }
         result = await self.orders.insert_one(order)

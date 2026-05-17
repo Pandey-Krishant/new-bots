@@ -37,10 +37,15 @@ async def admin_button_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     query = update.callback_query
     await query.answer()
     
-    if query.data == 'admin_stats':
-        await get_stats(update, context)
-    elif query.data == 'admin_logs':
-        await get_logs(update, context)
+    from telegram.error import BadRequest
+    try:
+        if query.data == 'admin_stats':
+            await get_stats(update, context)
+        elif query.data == 'admin_logs':
+            await get_logs(update, context)
+    except BadRequest as e:
+        if "Message is not modified" not in str(e):
+            raise e
 
 async def get_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id

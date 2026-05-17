@@ -51,43 +51,48 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     query = update.callback_query
     await query.answer()
     
-    if query.data == 'back_to_start':
-        await start(update, context)
-    elif query.data == 'my_wallet':
-        user = await db.get_user(query.from_user.id)
-        balance = user.get('balance', 0.0) if user else 0.0
-        text = (
-            "<b>💳 My Wallet</b>\n\n"
-            f"💰 <b>Current Balance:</b> <code>${balance:.2f}</code>\n\n"
-            "To add funds, please use the <b>🚀 Launch Elite Store</b> button below."
-        )
-        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data='back_to_start')]]), parse_mode='HTML')
-    elif query.data == 'my_orders':
-        orders = await db.get_user_orders(query.from_user.id)
-        if not orders:
-            text = "<b>📦 My Orders</b>\n\nYou haven't made any purchases yet."
-        else:
-            text = "<b>📦 Your Recent Orders:</b>\n\n"
-            for o in orders[:5]:
-                status_icon = "✅" if o['status'] == 'Completed' else "⏳"
-                text += f"{status_icon} <b>{o['plan_name']}</b>\n   └ Price: ${o['total_price']} | Status: {o['status']}\n\n"
-        
-        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data='back_to_start')]]), parse_mode='HTML')
-    elif query.data == 'support':
-        text = (
-            "<b>📞 Customer Support</b>\n\n"
-            "Our team is available 24/7 to assist you with your orders or any questions you may have.\n\n"
-            "Contact us: @YourSupportHandle"
-        )
-        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data='back_to_start')]]), parse_mode='HTML')
-    elif query.data == 'about':
-        text = (
-            "<b>ℹ️ About Elite AI Store</b>\n\n"
-            "We are the #1 provider of private AI subscriptions. All our accounts are 100% private and come with full warranties.\n\n"
-            "✦ <b>Version:</b> 2.0.0\n"
-            "✦ <b>Reliability:</b> 99.9%"
-        )
-        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data='back_to_start')]]), parse_mode='HTML')
+    from telegram.error import BadRequest
+    try:
+        if query.data == 'back_to_start':
+            await start(update, context)
+        elif query.data == 'my_wallet':
+            user = await db.get_user(query.from_user.id)
+            balance = user.get('balance', 0.0) if user else 0.0
+            text = (
+                "<b>💳 My Wallet</b>\n\n"
+                f"💰 <b>Current Balance:</b> <code>${balance:.2f}</code>\n\n"
+                "To add funds, please use the <b>🚀 Launch Elite Store</b> button below."
+            )
+            await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data='back_to_start')]]), parse_mode='HTML')
+        elif query.data == 'my_orders':
+            orders = await db.get_user_orders(query.from_user.id)
+            if not orders:
+                text = "<b>📦 My Orders</b>\n\nYou haven't made any purchases yet."
+            else:
+                text = "<b>📦 Your Recent Orders:</b>\n\n"
+                for o in orders[:5]:
+                    status_icon = "✅" if o['status'] == 'Completed' else "⏳"
+                    text += f"{status_icon} <b>{o['plan_name']}</b>\n   └ Price: ${o['total_price']} | Status: {o['status']}\n\n"
+            
+            await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data='back_to_start')]]), parse_mode='HTML')
+        elif query.data == 'support':
+            text = (
+                "<b>📞 Customer Support</b>\n\n"
+                "Our team is available 24/7 to assist you with your orders or any questions you may have.\n\n"
+                "Contact us: @YourSupportHandle"
+            )
+            await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data='back_to_start')]]), parse_mode='HTML')
+        elif query.data == 'about':
+            text = (
+                "<b>ℹ️ About Elite AI Store</b>\n\n"
+                "We are the #1 provider of private AI subscriptions. All our accounts are 100% private and come with full warranties.\n\n"
+                "✦ <b>Version:</b> 2.0.0\n"
+                "✦ <b>Reliability:</b> 99.9%"
+            )
+            await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data='back_to_start')]]), parse_mode='HTML')
+    except BadRequest as e:
+        if "Message is not modified" not in str(e):
+            raise e
 
 if __name__ == "__main__":
     loop = asyncio.new_event_loop()

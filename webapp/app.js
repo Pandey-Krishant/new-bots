@@ -336,63 +336,76 @@ async function confirmDeposit() {
 }
 
 // --- AUTH ---
-function handleLogin() {
+async function handleLogin() {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-password').value;
     
     if (!email || !pass) return notify('Fill all fields');
 
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    const user = users.find(u => u.email === email && u.password === pass);
-    
-    if (user) {
-        // regular user login
-        notify('🔄 Securing session...', true);
-        // existing token flow
-        fetch(`${API_URL}/get-token`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: user.user_id, username: user.username })
-        })
-        .then(res => res.json())
-        .then(data => {
-            user.token = data.token;
-            user.isAdmin = false;
-            state.user = user;
-            localStorage.setItem('session_user', JSON.stringify(user));
-            addLog(user.username, 'Login', `User logged in locally.`);
-            showMainApp();
-        })
-        .catch(() => {
-            notify('Error securing session. Try again.');
-        });
-    } else if (email === ADMIN_EMAIL && pass === ADMIN_PASS) {
-        // admin login
+    if (email === ADMIN_EMAIL && pass === ADMIN_PASS) {
+        // admin login fallback
         const adminUser = { username: 'Admin', email, user_id: Date.now(), isAdmin: true, token: 'admin-token', balance: 0 };
         state.user = adminUser;
         localStorage.setItem('session_user', JSON.stringify(adminUser));
         addLog('Admin', 'Login', 'Admin logged in.');
         showMainApp();
-    } else {
-        notify('Invalid login!');
+        return;
+    }
+
+    notify('🔄 Securing session...', true);
+    try {
+        const response = await fetch(`${API_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: pass })
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+            const user = {
+                user_id: data.user_id,
+                username: data.username,
+                email: data.email,
+                balance: data.balance || 0,
+                isAdmin: data.isAdmin,
+                token: data.token
+            };
+            state.user = user;
+            localStorage.setItem('session_user', JSON.stringify(user));
+            addLog(user.username, 'Login', 'User logged in via backend.');
+            showMainApp();
+        } else {
+            notify(data.detail || 'Invalid login!');
+        }
+    } catch (e) {
+        notify('Network error. Try again.');
     }
 }
 
-function handleRegister() {
+async function handleRegister() {
     const user = document.getElementById('reg-username').value;
     const email = document.getElementById('reg-email').value;
     const pass = document.getElementById('reg-password').value;
     if (!user || !email || !pass) return notify('Fill all fields');
     
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    if (users.find(u => u.email === email)) return notify('Email already exists');
-    
-    const user_id = Math.floor(Math.random() * 100000000);
-    users.push({ username: user, email, password: pass, balance: 0, user_id: user_id });
-    localStorage.setItem('registered_users', JSON.stringify(users));
-    addLog(user, 'Registration', `New account created locally.`);
-    notify('✨ Registered!', true);
-    toggleAuth('login');
+    notify('🔄 Registering...', true);
+    try {
+        const response = await fetch(`${API_URL}/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user, email, password: pass })
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+            notify('✨ Registered!', true);
+            toggleAuth('login');
+        } else {
+            notify(data.detail || 'Registration failed');
+        }
+    } catch (e) {
+        notify('Network error. Try again.');
+    }
 }
 
 function showMainApp() {

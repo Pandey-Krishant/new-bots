@@ -170,13 +170,51 @@ async def get_local_token(data: dict):
 
 @app.post("/api/register")
 async def register(data: dict):
-    # Deprecated: use local storage instead
-    raise HTTPException(status_code=400, detail="Use local storage registration")
+    username = data.get("username")
+    email = data.get("email")
+    password = data.get("password")
+    
+    if not username or not email or not password:
+        raise HTTPException(status_code=400, detail="Missing fields")
+        
+    existing_user = await db.get_user_by_email_or_username(email)
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already exists")
+        
+    # Generate unique user_id for custom auth users (random 9 digit int)
+    import random
+    user_id = random.randint(100000000, 999999999)
+    
+    hashed_pw = hash_password(password)
+    await db.register_user(user_id, username, email, hashed_pw)
+    
+    return {"status": "ok", "message": "Registered successfully"}
 
 @app.post("/api/login")
 async def login(data: dict):
-    # Deprecated: use local storage instead
-    raise HTTPException(status_code=400, detail="Use local storage login")
+    email = data.get("email")
+    password = data.get("password")
+    
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="Missing credentials")
+        
+    user = await db.get_user_by_email_or_username(email)
+    if not user or not verify_password(password, user.get("password")):
+        raise HTTPException(status_code=401, detail="Invalid login")
+        
+    user_id = user["user_id"]
+    username = user["username"]
+    token = sign_token({"sub": "user", "user_id": user_id, "username": username})
+    
+    return {
+        "status": "ok",
+        "token": token,
+        "user_id": user_id,
+        "username": username,
+        "email": user.get("email"),
+        "balance": user.get("balance", 0.0),
+        "isAdmin": is_admin(user_id)
+    }
 
 @app.get("/api/me")
 async def get_me(request: Request):

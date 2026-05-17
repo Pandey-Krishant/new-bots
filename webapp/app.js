@@ -342,6 +342,11 @@ function showMainApp() {
     document.getElementById('main-content').style.display = 'block';
     updateWalletDisplay();
     renderTools();
+    // Show admin nav only for admin users
+    const adminNav = document.getElementById('nav-admin');
+    if (adminNav) {
+        adminNav.style.display = (state.user && state.user.isAdmin) ? 'flex' : 'none';
+    }
     lucide.createIcons();
 }
 

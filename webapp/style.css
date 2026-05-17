@@ -24,7 +24,6 @@ body {
 /* Hero */
 .hero { padding: 80px 0 40px; text-align: center; }
 .hero h1 {
-    font-family: 'Syne', 'Inter', sans-serif;
     font-size: 56px;
     font-weight: 800;
     margin-bottom: 12px;
@@ -243,6 +242,12 @@ body::after {
 
 /* Animated gradient hero title */
 .hero h1 {
+    font-family: 'Syne', 'Inter', sans-serif;
+    font-size: 56px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    letter-spacing: -2px;
+    line-height: 1.05;
     background: linear-gradient(120deg, #f8fafc 0%, #c4b5fd 40%, #f9a8d4 70%, #f8fafc 100%);
     background-size: 250% auto;
     -webkit-background-clip: text;

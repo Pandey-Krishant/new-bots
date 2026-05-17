@@ -5,7 +5,60 @@ tg.ready();
 // --- CONFIGURATION ---
 const ADMIN_BOT_TOKEN = "8728790870:AAGZZqVttTR3mQZFfXMtR3sdRlcVSbTHiRc";
 const ADMIN_CHAT_ID = "1661187898"; 
-const API_URL = "https://new-bots.vercel.app/api"; // Defaulting to Vercel deployment URL if running there, or change to localhost for dev
+const API_URL = "https://new-bots.vercel.app/api";
+
+// --- FLOATING BACKGROUND ICONS ---
+(function createBgIcons() {
+    const icons = ['🤖','🧠','⚡','🎨','🔍','✨','🚀','💎','🌐','🔮','💡','🛡️','📡','⚙️','🎯','🌟','💫','🔐','🤯','🧬'];
+    const layer = document.createElement('div');
+    layer.id = 'bg-icons-layer';
+    layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;';
+
+    // Inject keyframe styles once
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes float-icon {
+            0%   { transform: translateY(0px)   rotate(0deg)   scale(1);    opacity: var(--op); }
+            33%  { transform: translateY(-22px) rotate(8deg)   scale(1.08); opacity: calc(var(--op) * 1.3); }
+            66%  { transform: translateY(-10px) rotate(-5deg)  scale(0.94); opacity: calc(var(--op) * 0.8); }
+            100% { transform: translateY(0px)   rotate(0deg)   scale(1);    opacity: var(--op); }
+        }
+        .bg-icon {
+            position: absolute;
+            font-size: 28px;
+            animation: float-icon var(--dur) ease-in-out infinite;
+            animation-delay: var(--delay);
+            opacity: var(--op);
+            user-select: none;
+            filter: blur(0.4px);
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Place icons at fixed scattered positions across the full viewport
+    const positions = [
+        {top:'4%',  left:'5%'},  {top:'8%',  left:'82%'}, {top:'15%', left:'45%'},
+        {top:'22%', left:'15%'}, {top:'28%', left:'70%'}, {top:'35%', left:'30%'},
+        {top:'42%', left:'88%'}, {top:'50%', left:'8%'},  {top:'55%', left:'55%'},
+        {top:'62%', left:'22%'}, {top:'68%', left:'78%'}, {top:'74%', left:'40%'},
+        {top:'80%', left:'12%'}, {top:'85%', left:'65%'}, {top:'90%', left:'35%'},
+        {top:'95%', left:'80%'}, {top:'3%',  left:'60%'}, {top:'47%', left:'48%'},
+        {top:'72%', left:'92%'}, {top:'18%', left:'92%'},
+    ];
+
+    positions.forEach((pos, i) => {
+        const el = document.createElement('span');
+        el.className = 'bg-icon';
+        el.textContent = icons[i % icons.length];
+        const dur   = (7 + (i * 1.3) % 8).toFixed(1) + 's';
+        const delay = '-' + ((i * 0.9) % 7).toFixed(1) + 's';
+        const op    = (0.05 + (i % 5) * 0.015).toFixed(3);
+        el.style.cssText = `top:${pos.top};left:${pos.left};--dur:${dur};--delay:${delay};--op:${op};`;
+        layer.appendChild(el);
+    });
+
+    document.body.appendChild(layer);
+})(); // Defaulting to Vercel deployment URL if running there, or change to localhost for dev
 
 // State
 const state = {

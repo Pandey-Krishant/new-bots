@@ -25,15 +25,17 @@ from fastapi import UploadFile, File
 app = FastAPI()
 db = Database()
 
+# Always configure Cloudinary — works in both local and Vercel environments
 try:
     from .config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
-    cloudinary.config(
-        cloud_name=CLOUDINARY_CLOUD_NAME,
-        api_key=CLOUDINARY_API_KEY,
-        api_secret=CLOUDINARY_API_SECRET
-    )
 except ImportError:
-    pass
+    from config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+
+cloudinary.config(
+    cloud_name=CLOUDINARY_CLOUD_NAME,
+    api_key=CLOUDINARY_API_KEY,
+    api_secret=CLOUDINARY_API_SECRET
+)
 
 # --- ENHANCED CORS FOR VERCEL ---
 # --- ERROR LOGGING MIDDLEWARE ---
@@ -179,7 +181,8 @@ async def login(data: dict):
 @app.get("/api/me")
 async def get_me(request: Request):
     user = await get_current_user(request)
-    user["_id"] = str(user["_id"])
+    if "_id" in user:
+        user["_id"] = str(user["_id"])
     user["is_admin"] = is_admin(user["user_id"])
     return user
 
@@ -218,9 +221,12 @@ async def get_orders(request: Request):
 @app.post("/api/admin/upload-image")
 async def upload_image(file: UploadFile = File(...)):
     try:
-        result = cloudinary.uploader.upload(file.file)
+        import asyncio
+        contents = await file.read()
+        result = await asyncio.to_thread(cloudinary.uploader.upload, contents)
         return {"status": "ok", "url": result.get("secure_url")}
     except Exception as e:
+        print(f"CLOUDINARY ERROR: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/admin/plans")

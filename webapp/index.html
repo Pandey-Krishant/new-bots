@@ -99,16 +99,6 @@
                     </div>
                 </div>
 
-                <!-- ADMIN VIEW (HIDDEN) -->
-                <div id="screen-admin" class="view">
-                    <h2 style="font-size: 30px; font-weight: 800; margin-bottom: 30px; color: #ffeb3b;">Admin Panel</h2>
-                    <div class="tool-card" style="padding: 25px; margin-bottom: 30px;">
-                        <h3 style="margin-bottom: 20px;">Add / Edit Product</h3>
-                        <input type="hidden" id="admin-plan-id">
-                        <input type="text" id="admin-plan-name" class="auth-input" placeholder="Product Name">
-                        <input type="number" id="admin-plan-price" class="auth-input" placeholder="Price (USD)">
-                        <input type="text" id="admin-plan-desc" class="auth-input" placeholder="Description">
-                        
                         <label style="color: var(--text-dim); display: block; margin: 15px 0 10px;">Product Image</label>
                         <input type="file" id="admin-plan-image" class="auth-input" accept="image/*" style="padding: 10px;">
                         <img id="admin-image-preview" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 10px; margin-top: 15px; display: none;">
@@ -162,7 +152,7 @@
                 <a href="#" class="nav-item active" onclick="showView('home')"><i data-lucide="home"></i><span>Home</span></a>
                 <a href="#" class="nav-item" onclick="showView('wallet')"><i data-lucide="wallet"></i><span>Wallet</span></a>
                 <a href="#" class="nav-item" onclick="showView('orders')"><i data-lucide="clock"></i><span>Orders</span></a>
-                <a href="#" class="nav-item" onclick="openAdminPanel()" style="color: #ffeb3b;"><i data-lucide="settings"></i><span>Admin</span></a>
+                
             </nav>
         </div>
     </div>

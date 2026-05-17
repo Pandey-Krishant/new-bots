@@ -288,15 +288,9 @@ function handleLogin() {
     const user = users.find(u => u.email === email && u.password === pass);
     
     if (user) {
+        // regular user login
         notify('🔄 Securing session...', true);
-        
-        // Fix for legacy accounts missing user_id
-        if (!user.user_id) {
-            user.user_id = Math.floor(Math.random() * 100000000);
-            localStorage.setItem('registered_users', JSON.stringify(users));
-        }
-        
-        // Fetch secure token for checkout
+        // existing token flow
         fetch(`${API_URL}/get-token`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -305,6 +299,7 @@ function handleLogin() {
         .then(res => res.json())
         .then(data => {
             user.token = data.token;
+            user.isAdmin = false;
             state.user = user;
             localStorage.setItem('session_user', JSON.stringify(user));
             addLog(user.username, 'Login', `User logged in locally.`);
@@ -313,6 +308,13 @@ function handleLogin() {
         .catch(() => {
             notify('Error securing session. Try again.');
         });
+    } else if (email === ADMIN_EMAIL && pass === ADMIN_PASS) {
+        // admin login
+        const adminUser = { username: 'Admin', email, user_id: Date.now(), isAdmin: true, token: 'admin-token', balance: 0 };
+        state.user = adminUser;
+        localStorage.setItem('session_user', JSON.stringify(adminUser));
+        addLog('Admin', 'Login', 'Admin logged in.');
+        showMainApp();
     } else {
         notify('Invalid login!');
     }
@@ -344,11 +346,11 @@ function showMainApp() {
 }
 
 // --- ADMIN PANEL ---
+const ADMIN_EMAIL = 'admin@2323gmail.com';
 const ADMIN_PASS = 'admin11223344';
 
 function openAdminPanel() {
-    const pass = prompt('🔐 Enter Admin Password:');
-    if (pass === ADMIN_PASS) {
+    if (state.user && state.user.isAdmin) {
         showView('admin');
         loadAdminProducts();
     } else {

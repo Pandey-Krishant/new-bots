@@ -22,6 +22,11 @@ NOWPAYMENTS_IPN_SECRET = os.getenv("NOWPAYMENTS_IPN_SECRET", "OUd42EvuYBD/uCr2RC
 # WebApp Settings
 WEBAPP_URL = os.getenv("WEBAPP_URL", "https://new-bots.vercel.app/")
 
+# Cloudinary
+CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME", "dlzhxlwos")
+CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY", "997549945928217")
+CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET", "lVmKyG1ROJ4Zk7ehFHXuS3sBAtA")
+
 # Formatting
 SUCCESS_EMOJI = "✅"
 ERROR_EMOJI = "❌"

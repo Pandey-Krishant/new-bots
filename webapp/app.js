@@ -92,7 +92,9 @@ function renderTools() {
     list.innerHTML = state.tools.map(tool => `
         <div class="tool-card" onclick="checkAccess('${tool.name}', ${tool.price})">
             <div class="tool-header">
-                <div class="tool-icon">${tool.icon}</div>
+                ${tool.image_url
+                    ? `<img src="${tool.image_url}" style="width:50px;height:50px;object-fit:cover;border-radius:10px;flex-shrink:0;">`
+                    : `<div class="tool-icon">${tool.icon}</div>`}
                 <div class="tool-title">
                     <h4>${tool.name}</h4>
                     <p>${tool.brand}</p>
@@ -288,16 +290,194 @@ function showMainApp() {
     lucide.createIcons();
 }
 
+// --- ADMIN PANEL ---
+const ADMIN_PASS = 'admin11223344';
+
+function openAdminPanel() {
+    const pass = prompt('🔐 Enter Admin Password:');
+    if (pass === ADMIN_PASS) {
+        showView('admin');
+        loadAdminProducts();
+    } else {
+        notify('❌ Access Denied!');
+    }
+}
+
+// Image file picker preview + upload on Save
+document.addEventListener('DOMContentLoaded', () => {
+    const imgInput = document.getElementById('admin-plan-image');
+    if (imgInput) {
+        imgInput.addEventListener('change', () => {
+            const file = imgInput.files[0];
+            if (!file) return;
+            const preview = document.getElementById('admin-image-preview');
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = 'block';
+        });
+    }
+});
+
+async function uploadImageToCloudinary() {
+    const fileInput = document.getElementById('admin-plan-image');
+    const file = fileInput.files[0];
+    if (!file) return document.getElementById('admin-image-url').value || null;
+
+    notify('⬆️ Uploading image...', true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch(`${API_URL}/admin/upload-image`, {
+        method: 'POST',
+        body: formData
+    });
+    const data = await res.json();
+    if (data.url) {
+        document.getElementById('admin-image-url').value = data.url;
+        return data.url;
+    }
+    throw new Error('Image upload failed');
+}
+
+async function saveAdminPlan() {
+    const planId = document.getElementById('admin-plan-id').value;
+    const name = document.getElementById('admin-plan-name').value.trim();
+    const price = document.getElementById('admin-plan-price').value.trim();
+    const desc = document.getElementById('admin-plan-desc').value.trim();
+
+    if (!name || !price) return notify('Name and price are required!');
+
+    try {
+        let imageUrl = document.getElementById('admin-image-url').value;
+        // Upload new image if a file was picked
+        const fileInput = document.getElementById('admin-plan-image');
+        if (fileInput.files[0]) {
+            imageUrl = await uploadImageToCloudinary();
+        }
+
+        const payload = { name, price: parseFloat(price), description: desc, image_url: imageUrl };
+
+        if (planId) {
+            // Edit existing
+            await fetch(`${API_URL}/admin/plans/${planId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            notify('✅ Product updated!', true);
+        } else {
+            // Create new
+            await fetch(`${API_URL}/admin/plans`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            notify('✅ Product created!', true);
+        }
+
+        clearAdminForm();
+        loadAdminProducts();
+        // Refresh home tools too
+        await loadDynamicPlans();
+        renderTools();
+    } catch (e) {
+        notify('Error: ' + e.message);
+    }
+}
+
+async function loadAdminProducts() {
+    const container = document.getElementById('admin-products-list');
+    if (!container) return;
+    container.innerHTML = '<p style="color:var(--text-dim)">Loading...</p>';
+    try {
+        const res = await fetch(`${API_URL}/plans`);
+        const plans = await res.json();
+        if (!plans.length) {
+            container.innerHTML = '<p style="color:var(--text-dim)">No products yet.</p>';
+            return;
+        }
+        container.innerHTML = plans.map(p => `
+            <div class="tool-card" style="display:flex; align-items:center; gap:15px; padding:15px;">
+                ${p.image_url ? `<img src="${p.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:10px;flex-shrink:0;">` : `<div style="font-size:40px;width:60px;text-align:center;">${p.icon || '🤖'}</div>`}
+                <div style="flex:1; min-width:0;">
+                    <div style="font-weight:700;">${p.name}</div>
+                    <div style="color:var(--primary); font-weight:800;">$${p.price}</div>
+                    <div style="color:var(--text-dim);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.description || ''}</div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <button class="get-access-btn" style="font-size:12px;padding:8px 15px;" onclick='editAdminPlan(${JSON.stringify(p)})'>✏️ Edit</button>
+                    <button class="get-access-btn" style="font-size:12px;padding:8px 15px;background:#ff4444;" onclick="deleteAdminPlan('${p.name}')">🗑️ Delete</button>
+                </div>
+            </div>
+        `).join('');
+    } catch(e) {
+        container.innerHTML = '<p style="color:#ff4444">Failed to load products.</p>';
+    }
+}
+
+function editAdminPlan(plan) {
+    document.getElementById('admin-plan-id').value = plan._id || '';
+    document.getElementById('admin-plan-name').value = plan.name || '';
+    document.getElementById('admin-plan-price').value = plan.price || '';
+    document.getElementById('admin-plan-desc').value = plan.description || '';
+    document.getElementById('admin-image-url').value = plan.image_url || '';
+    const preview = document.getElementById('admin-image-preview');
+    if (plan.image_url) {
+        preview.src = plan.image_url;
+        preview.style.display = 'block';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function deleteAdminPlan(name) {
+    if (!confirm(`Delete "${name}"?`)) return;
+    await fetch(`${API_URL}/admin/plans/${encodeURIComponent(name)}`, { method: 'DELETE' });
+    notify('🗑️ Deleted!', true);
+    loadAdminProducts();
+    await loadDynamicPlans();
+    renderTools();
+}
+
+function clearAdminForm() {
+    document.getElementById('admin-plan-id').value = '';
+    document.getElementById('admin-plan-name').value = '';
+    document.getElementById('admin-plan-price').value = '';
+    document.getElementById('admin-plan-desc').value = '';
+    document.getElementById('admin-plan-image').value = '';
+    document.getElementById('admin-image-url').value = '';
+    const preview = document.getElementById('admin-image-preview');
+    preview.src = '';
+    preview.style.display = 'none';
+}
+
+async function loadDynamicPlans() {
+    try {
+        const res = await fetch(`${API_URL}/plans`);
+        const plans = await res.json();
+        if (plans && plans.length > 0) {
+            state.tools = plans.map(p => ({
+                id: p._id,
+                name: p.name,
+                brand: p.brand || '',
+                price: p.price,
+                icon: p.icon || '🤖',
+                desc: p.description || '',
+                image_url: p.image_url || null
+            }));
+        }
+    } catch(e) {
+        // Keep default hardcoded tools if API fails
+    }
+}
+
 // Init
 const session = localStorage.getItem('session_user');
 if (session) {
     state.user = JSON.parse(session);
-    // Force re-login if using legacy local session without a token (unless API is down and they rely on fallback)
     if (!state.user.token && !state.user.user_id) {
         localStorage.removeItem('session_user');
         state.user = null;
     } else {
-        showMainApp();
+        loadDynamicPlans().then(() => showMainApp());
     }
 }
 renderTools();

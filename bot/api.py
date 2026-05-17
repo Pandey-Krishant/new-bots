@@ -18,9 +18,22 @@ from datetime import datetime
 import base64
 import os
 import secrets
+import cloudinary
+import cloudinary.uploader
+from fastapi import UploadFile, File
 
 app = FastAPI()
 db = Database()
+
+try:
+    from .config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+    cloudinary.config(
+        cloud_name=CLOUDINARY_CLOUD_NAME,
+        api_key=CLOUDINARY_API_KEY,
+        api_secret=CLOUDINARY_API_SECRET
+    )
+except ImportError:
+    pass
 
 # --- ENHANCED CORS FOR VERCEL ---
 # --- ERROR LOGGING MIDDLEWARE ---
@@ -201,6 +214,50 @@ async def get_orders(request: Request):
     orders = await db.get_user_orders(user["user_id"])
     for o in orders: o["_id"] = str(o["_id"])
     return orders
+
+@app.post("/api/admin/upload-image")
+async def upload_image(file: UploadFile = File(...)):
+    try:
+        result = cloudinary.uploader.upload(file.file)
+        return {"status": "ok", "url": result.get("secure_url")}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/admin/plans")
+async def create_plan(data: dict):
+    # No auth check for this demo as requested (or relies on hardcoded credentials on frontend)
+    try:
+        name = data.get("name")
+        price = data.get("price")
+        description = data.get("description")
+        icon = data.get("icon", "🤖")
+        image_url = data.get("image_url")
+        if not name or not price: raise HTTPException(status_code=400, detail="Name and price required")
+        
+        await db.add_plan(name, price, description, icon, image_url)
+        return {"status": "ok"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/admin/plans/{plan_id}")
+async def update_plan(plan_id: str, data: dict):
+    try:
+        name = data.get("name")
+        price = data.get("price")
+        description = data.get("description")
+        image_url = data.get("image_url")
+        await db.update_plan(plan_id, name, price, description, image_url)
+        return {"status": "ok"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/admin/plans/{plan_name}")
+async def remove_plan(plan_name: str):
+    try:
+        await db.delete_plan(plan_name)
+        return {"status": "ok"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/admin/stats")
 async def get_admin_stats(request: Request):

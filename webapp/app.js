@@ -235,6 +235,12 @@ function handleLogin() {
     if (user) {
         notify('🔄 Securing session...', true);
         
+        // Fix for legacy accounts missing user_id
+        if (!user.user_id) {
+            user.user_id = Math.floor(Math.random() * 100000000);
+            localStorage.setItem('registered_users', JSON.stringify(users));
+        }
+        
         // Fetch secure token for checkout
         fetch(`${API_URL}/get-token`, {
             method: 'POST',

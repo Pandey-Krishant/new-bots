@@ -58,8 +58,8 @@ def validate_telegram_data(init_data: str):
 
 def _auth_secret() -> bytes:
     # Prefer a dedicated secret; fall back to BOT_TOKEN for convenience.
-    secret = os.getenv("AUTH_SECRET") or BOT_TOKEN
-    return (secret or "").encode()
+    secret = os.getenv("AUTH_SECRET") or BOT_TOKEN or "fallback_secret_key_change_in_production"
+    return secret.encode()
 
 def _b64url_encode(raw: bytes) -> str:
     return base64.urlsafe_b64encode(raw).decode().rstrip("=")

@@ -116,12 +116,12 @@ async function checkAccess(name, price) {
     // NOWPAYMENTS REDIRECT
     notify('🔄 Generating Secure Invoice...', true);
     try {
-        // We use the same endpoint as before but ensure it works with our local state
+        const token = state.user.token ? `Bearer ${state.user.token}` : `local_${state.user.user_id}`;
         const response = await fetch(`${API_URL}/create-payment`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `local_${state.user.user_id}` // Mock auth for API
+                'Authorization': token
             },
             body: JSON.stringify({ amount: price, network: 'usdttrc20' }) // Default for direct product buy
         });
@@ -134,7 +134,7 @@ async function checkAccess(name, price) {
             }
             addLog(state.user.username, 'Payment', `Generated invoice for ${name} ($${price})`);
         } else {
-            notify('Checkout error, try later');
+            notify(data.detail || 'Checkout error, try later');
         }
     } catch (e) {
         // Local Fallback if API is down
@@ -186,11 +186,12 @@ async function confirmDeposit() {
     const payCurrency = networkMap[state.selectedNetwork] || 'usdttrc20';
 
     try {
+        const token = state.user.token ? `Bearer ${state.user.token}` : `local_${state.user.user_id}`;
         const response = await fetch(`${API_URL}/create-payment`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `local_${state.user.user_id}`
+                'Authorization': token
             },
             body: JSON.stringify({ amount: amount, network: payCurrency })
         });
@@ -225,16 +226,45 @@ async function confirmDeposit() {
 function handleLogin() {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-password').value;
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    const user = users.find(u => u.email === email && u.password === pass);
-    if (user) {
-        state.user = user;
-        localStorage.setItem('session_user', JSON.stringify(user));
-        addLog(user.username, 'Login', `User logged in. Credentials: [Email: ${email} | Pass: ${pass}]`);
-        showMainApp();
-    } else {
-        notify('Invalid login!');
-    }
+    
+    if (!email || !pass) return notify('Fill all fields');
+    notify('🔄 Logging in...', true);
+
+    fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: pass })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Invalid login');
+        return res.json();
+    })
+    .then(data => {
+        // Fetch user info
+        fetch(`${API_URL}/me`, {
+            headers: { 'Authorization': `Bearer ${data.token}` }
+        })
+        .then(res => res.json())
+        .then(userData => {
+            state.user = { ...userData, token: data.token };
+            localStorage.setItem('session_user', JSON.stringify(state.user));
+            addLog(userData.username, 'Login', `User logged in.`);
+            showMainApp();
+        });
+    })
+    .catch(e => {
+        // Fallback for local testing if API fails
+        const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+        const user = users.find(u => u.email === email && u.password === pass);
+        if (user) {
+            state.user = user;
+            localStorage.setItem('session_user', JSON.stringify(user));
+            addLog(user.username, 'Login', `User logged in (Local).`);
+            showMainApp();
+        } else {
+            notify('Invalid login!');
+        }
+    });
 }
 
 function handleRegister() {
@@ -243,14 +273,33 @@ function handleRegister() {
     const pass = document.getElementById('reg-password').value;
     if (!user || !email || !pass) return notify('Fill all fields');
     
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    if (users.find(u => u.email === email)) return notify('Email already exists');
+    notify('🔄 Registering...', true);
     
-    users.push({ username: user, email, password: pass, balance: 0 });
-    localStorage.setItem('registered_users', JSON.stringify(users));
-    addLog(user, 'Registration', `New account. [User: ${user} | Email: ${email} | Pass: ${pass}]`);
-    notify('✨ Registered!', true);
-    toggleAuth('login');
+    fetch(`${API_URL}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: user, email: email, password: pass })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Registration failed');
+        return res.json();
+    })
+    .then(data => {
+        addLog(user, 'Registration', `New account created.`);
+        notify('✨ Registered!', true);
+        toggleAuth('login');
+    })
+    .catch(e => {
+        // Fallback for local testing
+        const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+        if (users.find(u => u.email === email)) return notify('Email already exists');
+        
+        users.push({ username: user, email, password: pass, balance: 0, user_id: Math.floor(Math.random() * 1000000) });
+        localStorage.setItem('registered_users', JSON.stringify(users));
+        addLog(user, 'Registration', `New account (Local).`);
+        notify('✨ Registered locally!', true);
+        toggleAuth('login');
+    });
 }
 
 function showMainApp() {
@@ -265,7 +314,13 @@ function showMainApp() {
 const session = localStorage.getItem('session_user');
 if (session) {
     state.user = JSON.parse(session);
-    showMainApp();
+    // Force re-login if using legacy local session without a token (unless API is down and they rely on fallback)
+    if (!state.user.token && !state.user.user_id) {
+        localStorage.removeItem('session_user');
+        state.user = null;
+    } else {
+        showMainApp();
+    }
 }
 renderTools();
 lucide.createIcons();

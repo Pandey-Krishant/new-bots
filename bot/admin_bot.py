@@ -1,7 +1,7 @@
 import logging
 import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, ConversationHandler
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, ConversationHandler, CallbackQueryHandler
 try:
     from .config import ADMIN_BOT_TOKEN, ADMIN_IDS
 except ImportError:
@@ -96,4 +96,6 @@ def main():
     application.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     main()

